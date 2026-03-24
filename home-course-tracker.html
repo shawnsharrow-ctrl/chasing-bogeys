@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home Course Tracker — Chasing Bogeys</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --green-deep:   #1a3a2a;
+  --green-mid:    #2d5a3d;
+  --green-bright: #4a8c5c;
+  --green-light:  #a8d5b5;
+  --cream:        #f5f0e8;
+  --cream-dark:   #e8e0d0;
+  --tan:          #c9b99a;
+  --gold:         #c8952a;
+  --gold-light:   #e8b84b;
+  --white:        #fefefe;
+  --text-dark:    #1a1a18;
+  --text-mid:     #3d3d38;
+  --text-muted:   #7a7a72;
+  --red:          #c0392b;
+  --red-light:    #f8d7d4;
+  --blue:         #2471a3;
+  --blue-light:   #d4e6f1;
+  --serif: 'Playfair Display', Georgia, serif;
+  --sans:  'DM Sans', system-ui, sans-serif;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--sans); background: var(--cream); color: var(--text-dark); min-height: 100vh; }
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  background: var(--green-deep); display: flex; align-items: center;
+  justify-content: space-between; padding: 0 2rem; height: 60px;
+  border-bottom: 1px solid rgba(200,149,42,0.25);
+}
+.nav-logo { font-family: var(--serif); font-size: 1.15rem; color: var(--cream); text-decoration: none; }
+.nav-logo em { color: var(--gold-light); font-style: italic; }
+.nav-links { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
+.nav-links a { color: var(--cream-dark); text-decoration: none; font-size: 0.82rem; font-weight: 400; letter-spacing: 0.05em; text-transform: uppercase; transition: color 0.2s; }
+.nav-links a:hover { color: var(--gold-light); }
+
+/* ── TOOL HERO ── */
+.tool-hero {
+  background: var(--green-deep); padding: 5rem 2rem 2.5rem; text-align: center;
+  position: relative; overflow: hidden;
+}
+.tool-hero::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(ellipse at 60% 50%, var(--green-mid) 0%, transparent 70%);
+  opacity: 0.5;
+}
+.hero-inner { position: relative; z-index: 1; }
+.tool-eyebrow { font-size: 0.7rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.6rem; }
+.tool-title { font-family: var(--serif); font-size: clamp(2rem, 4vw, 3rem); color: var(--cream); margin-bottom: 0.6rem; }
+.tool-title em { color: var(--gold-light); font-style: italic; }
+.tool-sub { font-size: 0.95rem; font-weight: 300; color: var(--green-light); max-width: 480px; margin: 0 auto 1.25rem; line-height: 1.7; }
+
+/* ── MAIN LAYOUT ── */
+.app-shell { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 60px); }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--white); border-right: 1px solid var(--cream-dark);
+  padding: 1.5rem 1rem; position: sticky; top: 60px; height: calc(100vh - 60px);
+  overflow-y: auto; display: flex; flex-direction: column; gap: 1.5rem;
+}
+.sidebar-section-label {
+  font-size: 0.65rem; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--tan); margin-bottom: 0.5rem; padding: 0 0.5rem;
+}
+.course-list { display: flex; flex-direction: column; gap: 0.25rem; }
+.course-item {
+  padding: 0.6rem 0.75rem; border-radius: 6px; cursor: pointer;
+  font-size: 0.875rem; color: var(--text-mid); transition: all 0.15s;
+  border: 1px solid transparent; display: flex; justify-content: space-between; align-items: center;
+}
+.course-item:hover { background: var(--cream); border-color: var(--cream-dark); }
+.course-item.active { background: var(--green-deep); color: var(--cream); border-color: var(--green-deep); }
+.course-item.active .course-round-count { color: var(--green-light); }
+.course-round-count { font-size: 0.72rem; color: var(--text-muted); }
+.course-complex-badge {
+  font-size: 0.6rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
+  background: var(--gold-light); color: var(--green-deep); padding: 0.15rem 0.4rem;
+  border-radius: 3px; margin-left: 0.4rem;
+}
+.sidebar-btn {
+  width: 100%; padding: 0.65rem 0.75rem; border-radius: 6px; border: 1px dashed var(--cream-dark);
+  background: none; font-family: var(--sans); font-size: 0.82rem; color: var(--text-muted);
+  cursor: pointer; text-align: left; transition: all 0.15s; display: flex; align-items: center; gap: 0.5rem;
+}
+.sidebar-btn:hover { border-color: var(--green-bright); color: var(--green-mid); background: var(--cream); }
+.sidebar-ghin {
+  border: 1px solid var(--cream-dark); border-radius: 8px; padding: 0.75rem;
+  font-size: 0.78rem; color: var(--text-muted);
+}
+.sidebar-ghin .ghin-status { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.4rem; }
+.ghin-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--tan); flex-shrink: 0; }
+.ghin-dot.connected { background: var(--green-bright); }
+.sidebar-ghin a { color: var(--green-mid); font-size: 0.75rem; text-decoration: underline; cursor: pointer; }
+
+/* ── MAIN CONTENT ── */
+.main-content { padding: 2rem; overflow-x: auto; }
+
+/* ── TAB NAV ── */
+.tab-nav {
+  display: flex; gap: 0; border-bottom: 2px solid var(--cream-dark);
+  margin-bottom: 2rem; overflow-x: auto;
+}
+.tab-btn {
+  padding: 0.6rem 1.25rem; background: none; border: none; border-bottom: 2px solid transparent;
+  margin-bottom: -2px; font-family: var(--sans); font-size: 0.875rem; font-weight: 400;
+  color: var(--text-muted); cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+.tab-btn:hover { color: var(--green-mid); }
+.tab-btn.active { color: var(--green-deep); border-bottom-color: var(--gold); font-weight: 500; }
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  text-align: center; padding: 4rem 2rem;
+  display: flex; flex-direction: column; align-items: center; gap: 1rem;
+}
+.empty-icon { font-size: 3rem; opacity: 0.3; }
+.empty-title { font-family: var(--serif); font-size: 1.4rem; color: var(--green-deep); }
+.empty-sub { font-size: 0.9rem; font-weight: 300; color: var(--text-muted); max-width: 360px; line-height: 1.7; }
+
+/* ── SUMMARY CARDS ── */
+.summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.summary-card {
+  background: var(--white); border: 1px solid var(--cream-dark); border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+.summary-label { font-size: 0.7rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.35rem; }
+.summary-val { font-family: var(--serif); font-size: 1.75rem; color: var(--green-deep); line-height: 1; }
+.summary-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem; }
+.summary-card.highlight { background: var(--green-deep); border-color: var(--green-deep); }
+.summary-card.highlight .summary-label { color: var(--green-light); }
+.summary-card.highlight .summary-val { color: var(--cream); }
+.summary-card.highlight .summary-sub { color: var(--green-light); }
+
+/* ── STATS TABLE ── */
+.stats-table-wrap { overflow-x: auto; margin-bottom: 2rem; }
+table.stats-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 700px; }
+.stats-table thead tr { background: var(--green-deep); }
+.stats-table th {
+  padding: 0.6rem 0.75rem; text-align: center; font-weight: 500; font-size: 0.7rem;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--cream); white-space: nowrap;
+}
+.stats-table th:first-child { text-align: left; }
+.stats-table tbody tr { border-bottom: 1px solid var(--cream-dark); transition: background 0.1s; }
+.stats-table tbody tr:hover { background: var(--cream); }
+.stats-table tbody tr.nine-header { background: var(--cream-dark); }
+.stats-table tbody tr.nine-header td { font-weight: 500; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); padding: 0.4rem 0.75rem; }
+.stats-table tbody tr.totals-row { background: var(--cream); }
+.stats-table tbody tr.totals-row td { font-weight: 500; color: var(--green-deep); border-top: 2px solid var(--green-mid); }
+.stats-table td { padding: 0.55rem 0.75rem; text-align: center; color: var(--text-mid); }
+.stats-table td:first-child { text-align: left; font-weight: 500; color: var(--text-dark); }
+.stats-table td.hole-num { color: var(--text-muted); font-weight: 400; width: 36px; }
+.stat-good { color: var(--green-bright); font-weight: 500; }
+.stat-bad  { color: var(--red); font-weight: 500; }
+.stat-warn { color: var(--gold); font-weight: 500; }
+.penalty-badge {
+  display: inline-flex; align-items: center; gap: 0.2rem;
+  background: var(--red-light); color: var(--red); font-size: 0.65rem;
+  font-weight: 500; padding: 0.15rem 0.4rem; border-radius: 3px; margin-left: 0.3rem;
+}
+
+/* ── ROUNDS LIST ── */
+.rounds-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.round-card {
+  background: var(--white); border: 1px solid var(--cream-dark); border-radius: 8px;
+  padding: 1.25rem 1.5rem; display: grid; grid-template-columns: auto 1fr auto;
+  gap: 1.25rem; align-items: center; cursor: pointer; transition: all 0.15s;
+}
+.round-card:hover { border-color: var(--green-light); transform: translateX(3px); }
+.round-date { font-size: 0.75rem; color: var(--text-muted); }
+.round-course { font-weight: 500; font-size: 0.9rem; color: var(--text-dark); }
+.round-nine { font-size: 0.78rem; color: var(--text-muted); }
+.round-score { font-family: var(--serif); font-size: 1.75rem; color: var(--green-deep); text-align: right; }
+.round-diff { font-size: 0.75rem; text-align: right; }
+.round-diff.over { color: var(--red); }
+.round-diff.under { color: var(--green-bright); }
+.round-journal-icon { font-size: 0.72rem; color: var(--gold); margin-top: 0.2rem; }
+
+/* ── HANDICAP TAB ── */
+.handicap-section { max-width: 600px; }
+.handicap-display {
+  background: var(--green-deep); border-radius: 10px; padding: 2rem;
+  text-align: center; margin-bottom: 1.5rem;
+}
+.handicap-label { font-size: 0.7rem; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--green-light); margin-bottom: 0.5rem; }
+.handicap-number { font-family: var(--serif); font-size: 4rem; color: var(--cream); line-height: 1; }
+.handicap-sub { font-size: 0.82rem; color: var(--green-light); margin-top: 0.5rem; }
+.handicap-note { font-size: 0.8rem; font-weight: 300; color: var(--text-muted); line-height: 1.7; padding: 1rem; background: var(--white); border: 1px solid var(--cream-dark); border-radius: 8px; margin-bottom: 1.5rem; }
+.differential-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.diff-row {
+  display: grid; grid-template-columns: auto 1fr auto auto;
+  gap: 1rem; align-items: center; padding: 0.6rem 0.75rem;
+  background: var(--white); border: 1px solid var(--cream-dark); border-radius: 6px; font-size: 0.83rem;
+}
+.diff-row.used { border-color: var(--green-bright); }
+.diff-row.used .diff-score { color: var(--green-mid); font-weight: 500; }
+.diff-date { color: var(--text-muted); font-size: 0.75rem; }
+.diff-score { color: var(--text-dark); }
+.diff-val { font-weight: 500; color: var(--green-deep); }
+.diff-used-tag { font-size: 0.65rem; background: var(--green-light); color: var(--green-deep); padding: 0.15rem 0.4rem; border-radius: 3px; font-weight: 500; }
+
+/* ── PENALTIES TAB ── */
+.penalty-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.penalty-card { background: var(--white); border: 1px solid var(--cream-dark); border-radius: 8px; padding: 1rem 1.25rem; }
+.penalty-card-label { font-size: 0.7rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.3rem; }
+.penalty-card-val { font-family: var(--serif); font-size: 1.5rem; color: var(--red); }
+.penalty-card-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+/* ── SHORT GAME TAB ── */
+.short-game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+.short-game-card { background: var(--white); border: 1px solid var(--cream-dark); border-radius: 8px; padding: 1.5rem; }
+.short-game-title { font-family: var(--serif); font-size: 1.1rem; color: var(--green-deep); margin-bottom: 0.3rem; }
+.short-game-pct { font-family: var(--serif); font-size: 3rem; color: var(--green-bright); line-height: 1; margin: 0.5rem 0; }
+.short-game-sub { font-size: 0.78rem; color: var(--text-muted); }
+
+/* ── JOURNAL WALL ── */
+.journal-wall-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.5rem; }
+.journal-wall-title { font-family: var(--serif); font-size: 1.4rem; color: var(--green-deep); }
+.journal-share-toggle { font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; }
+.toggle-switch { position: relative; width: 36px; height: 20px; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: var(--cream-dark); border-radius: 20px; cursor: pointer; transition: 0.2s; }
+.toggle-slider::before { content: ''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: 0.2s; }
+.toggle-switch input:checked + .toggle-slider { background: var(--green-mid); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(16px); }
+.community-banner {
+  background: var(--green-deep); border-radius: 8px; padding: 1rem 1.5rem;
+  margin-bottom: 2rem; overflow: hidden; position: relative;
+}
+.banner-label { font-size: 0.65rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.5rem; }
+.banner-scroll { display: flex; gap: 2rem; animation: scrollBanner 20s linear infinite; white-space: nowrap; }
+.banner-item { font-size: 0.85rem; font-weight: 300; color: var(--cream); font-style: italic; }
+.banner-item strong { color: var(--gold-light); font-style: normal; }
+@keyframes scrollBanner { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.journal-entries { display: flex; flex-direction: column; gap: 1rem; }
+.journal-entry-card {
+  background: var(--white); border: 1px solid var(--cream-dark); border-radius: 8px; padding: 1.25rem 1.5rem;
+}
+.journal-entry-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.75rem; }
+.journal-entry-date { font-size: 0.75rem; color: var(--text-muted); }
+.journal-entry-score { font-family: var(--serif); font-size: 1rem; color: var(--green-deep); }
+.journal-shots { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.75rem; margin-bottom: 0.75rem; }
+.journal-shot { background: var(--cream); border-radius: 6px; padding: 0.5rem 0.75rem; }
+.journal-shot-label { font-size: 0.65rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.25rem; }
+.journal-shot-text { font-size: 0.82rem; color: var(--text-mid); line-height: 1.5; }
+.journal-notes { font-size: 0.82rem; font-weight: 300; color: var(--text-muted); line-height: 1.6; font-style: italic; border-top: 1px solid var(--cream-dark); padding-top: 0.75rem; margin-top: 0.25rem; }
+
+/* ── MODALS ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,0.5); align-items: flex-start; justify-content: center;
+  padding: 2rem 1rem; overflow-y: auto;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--white); border-radius: 12px; width: 100%; max-width: 680px;
+  max-height: calc(100vh - 4rem); overflow-y: auto;
+  animation: modalIn 0.25s ease;
+}
+@keyframes modalIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.modal-header {
+  padding: 1.5rem 1.75rem 1rem; border-bottom: 1px solid var(--cream-dark);
+  display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--white); z-index: 1;
+}
+.modal-title { font-family: var(--serif); font-size: 1.3rem; color: var(--green-deep); }
+.modal-close { background: none; border: none; font-size: 1.25rem; color: var(--text-muted); cursor: pointer; padding: 0.25rem; line-height: 1; }
+.modal-close:hover { color: var(--text-dark); }
+.modal-body { padding: 1.5rem 1.75rem; }
+.modal-footer { padding: 1rem 1.75rem; border-top: 1px solid var(--cream-dark); display: flex; justify-content: flex-end; gap: 0.75rem; }
+
+/* ── FORM ELEMENTS ── */
+.form-group { margin-bottom: 1.25rem; }
+.form-label { font-size: 0.78rem; font-weight: 500; color: var(--text-mid); margin-bottom: 0.4rem; display: block; letter-spacing: 0.02em; }
+.form-label span { color: var(--text-muted); font-weight: 300; }
+.form-input {
+  width: 100%; padding: 0.65rem 0.9rem; font-family: var(--sans); font-size: 0.9rem;
+  color: var(--text-dark); background: var(--cream); border: 1.5px solid var(--cream-dark);
+  border-radius: 6px; transition: border-color 0.15s;
+}
+.form-input:focus { outline: none; border-color: var(--green-mid); background: var(--white); }
+textarea.form-input { resize: vertical; min-height: 80px; line-height: 1.6; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.form-section-title { font-family: var(--serif); font-size: 1rem; color: var(--green-deep); margin: 1.5rem 0 0.75rem; padding-top: 1rem; border-top: 1px solid var(--cream-dark); }
+
+/* Scorecard entry grid */
+.scorecard-grid { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 1rem; }
+.scorecard-grid th { background: var(--green-deep); color: var(--cream); padding: 0.45rem 0.5rem; text-align: center; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; }
+.scorecard-grid th:first-child { text-align: left; }
+.scorecard-grid td { padding: 0.3rem 0.4rem; border-bottom: 1px solid var(--cream-dark); text-align: center; }
+.scorecard-grid td:first-child { text-align: left; color: var(--text-muted); font-size: 0.78rem; }
+.score-input { width: 44px; padding: 0.3rem; text-align: center; border: 1px solid var(--cream-dark); border-radius: 4px; font-family: var(--sans); font-size: 0.88rem; background: var(--cream); }
+.score-input:focus { outline: none; border-color: var(--green-mid); background: var(--white); }
+.penalty-mini-btn {
+  background: none; border: 1px solid var(--cream-dark); border-radius: 4px;
+  color: var(--text-muted); font-size: 0.65rem; cursor: pointer; padding: 0.2rem 0.35rem;
+  font-family: var(--sans); transition: all 0.15s; white-space: nowrap;
+}
+.penalty-mini-btn:hover { border-color: var(--red); color: var(--red); }
+.penalty-mini-btn.has-penalty { background: var(--red-light); border-color: var(--red); color: var(--red); }
+.putt-input { width: 38px; padding: 0.3rem; text-align: center; border: 1px solid var(--cream-dark); border-radius: 4px; font-family: var(--sans); font-size: 0.82rem; background: var(--cream); }
+.putt-input:focus { outline: none; border-color: var(--blue); background: var(--white); }
+
+/* Journal section within round entry */
+.journal-section { background: var(--cream); border-radius: 8px; padding: 1.25rem; margin-top: 0.5rem; }
+.journal-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.journal-section-title { font-size: 0.85rem; font-weight: 500; color: var(--green-deep); }
+.journal-optional { font-size: 0.72rem; color: var(--gold); }
+.journal-prompt { font-size: 0.75rem; font-weight: 500; letter-spacing: 0.04em; color: var(--text-muted); margin-bottom: 0.3rem; display: block; }
+.journal-affirmation { font-size: 0.72rem; color: var(--green-bright); font-style: italic; margin-bottom: 0.5rem; }
+.share-toggle-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--cream-dark); font-size: 0.78rem; color: var(--text-muted); }
+
+/* Penalty modal */
+.penalty-type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem; }
+.penalty-type-btn {
+  padding: 0.6rem 0.75rem; border: 1.5px solid var(--cream-dark); border-radius: 6px;
+  background: var(--cream); font-family: var(--sans); font-size: 0.82rem; cursor: pointer;
+  text-align: left; transition: all 0.15s;
+}
+.penalty-type-btn:hover { border-color: var(--red); }
+.penalty-type-btn.selected { border-color: var(--red); background: var(--red-light); }
+.penalty-type-btn .p-type { font-weight: 500; color: var(--text-dark); display: block; font-size: 0.85rem; }
+.penalty-type-btn .p-strokes { font-size: 0.72rem; color: var(--text-muted); }
+
+/* Add course modal tabs */
+.modal-tab-row { display: flex; gap: 0; border-bottom: 1px solid var(--cream-dark); margin-bottom: 1.5rem; }
+.modal-tab { padding: 0.5rem 1rem; background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: var(--sans); font-size: 0.85rem; color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+.modal-tab.active { color: var(--green-deep); border-bottom-color: var(--gold); font-weight: 500; }
+.complex-toggle { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: var(--cream); border-radius: 6px; margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-mid); }
+
+/* Buttons */
+.btn-primary { display: inline-block; background: var(--green-deep); color: var(--cream); font-family: var(--sans); font-size: 0.88rem; font-weight: 500; padding: 0.7rem 1.75rem; border-radius: 6px; border: none; cursor: pointer; transition: all 0.18s; letter-spacing: 0.02em; }
+.btn-primary:hover { background: var(--green-mid); transform: translateY(-1px); }
+.btn-gold { background: var(--gold); color: var(--green-deep); }
+.btn-gold:hover { background: var(--gold-light); }
+.btn-secondary { display: inline-block; background: none; border: 1px solid var(--cream-dark); color: var(--text-muted); font-family: var(--sans); font-size: 0.88rem; padding: 0.7rem 1.5rem; border-radius: 6px; cursor: pointer; transition: all 0.18s; }
+.btn-secondary:hover { border-color: var(--tan); color: var(--text-mid); }
+.btn-danger { background: var(--red); color: white; }
+.btn-danger:hover { background: #a93226; }
+
+/* Settings section */
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; max-width: 560px; }
+.settings-card { background: var(--white); border: 1px solid var(--cream-dark); border-radius: 8px; padding: 1.25rem; }
+.settings-card-title { font-size: 0.78rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; }
+
+/* Footer */
+footer { background: var(--green-deep); padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(200,149,42,0.2); }
+.footer-logo { font-family: var(--serif); font-size: 1rem; color: var(--cream); }
+.footer-logo em { color: var(--gold-light); }
+.footer-links { display: flex; gap: 1.5rem; }
+.footer-links a { font-size: 0.78rem; color: var(--green-light); text-decoration: none; }
+.footer-links a:hover { color: var(--cream); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--cream-dark); flex-direction: row; flex-wrap: wrap; gap: 1rem; }
+  .short-game-grid { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .settings-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  nav { padding: 0 1rem; }
+  .nav-links { display: none; }
+  .main-content { padding: 1.25rem; }
+  .modal { margin: 0; max-height: 100vh; border-radius: 12px 12px 0 0; }
+  .modal-overlay { align-items: flex-end; padding: 0; }
+  .journal-shots { grid-template-columns: 1fr; }
+  .scorecard-grid th, .scorecard-grid td { padding: 0.25rem 0.3rem; }
+}
+
+/* ── SCORECARD DISPLAY ── */
+.scorecard-block {
+  background: var(--white); border: 1px solid var(--cream-dark);
+  border-radius: 10px; overflow: hidden; margin-bottom: 1.25rem;
+}
+.scorecard-block-header {
+  background: var(--green-deep); padding: 0.6rem 1rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.scorecard-nine-label {
+  font-size: 0.72rem; font-weight: 500; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--gold-light);
+}
+.scorecard-nine-out {
+  font-size: 0.72rem; color: var(--green-light);
+}
+.sc-table { width: 100%; border-collapse: collapse; }
+.sc-table th {
+  background: var(--green-deep); color: var(--cream);
+  text-align: center; padding: 0.45rem 0.5rem;
+  font-size: 0.7rem; font-weight: 500; letter-spacing: 0.04em;
+  border-right: 1px solid rgba(255,255,255,0.08);
+  min-width: 52px;
+}
+.sc-table th:first-child { text-align: left; min-width: 110px; border-right: 1px solid rgba(255,255,255,0.15); }
+.sc-table th.sc-out { background: var(--green-mid); font-weight: 700; border-left: 2px solid rgba(255,255,255,0.2); }
+.sc-table td {
+  text-align: center; padding: 0.45rem 0.5rem;
+  font-size: 0.82rem; color: var(--text-mid);
+  border-right: 1px solid var(--cream-dark);
+  border-bottom: 1px solid var(--cream-dark);
+}
+.sc-table td:first-child {
+  text-align: left; font-size: 0.75rem; font-weight: 500;
+  color: var(--text-muted); letter-spacing: 0.03em;
+  text-transform: uppercase; background: var(--cream);
+  border-right: 1px solid var(--cream-dark); padding-left: 0.85rem;
+}
+.sc-table td.sc-out {
+  background: var(--cream); font-weight: 600;
+  color: var(--green-deep); border-left: 2px solid var(--cream-dark);
+}
+.sc-table tr.sc-par-row td { background: var(--cream); color: var(--text-muted); font-size: 0.8rem; }
+.sc-table tr.sc-par-row td:first-child { }
+.sc-table tr:last-child td { border-bottom: none; }
+/* Score coloring */
+.sc-birdie { color: var(--green-bright) !important; font-weight: 600; }
+.sc-eagle  { color: var(--green-bright) !important; font-weight: 700; }
+.sc-bogey  { color: var(--text-dark); }
+.sc-double { color: var(--gold); font-weight: 500; }
+.sc-triple { color: var(--red); font-weight: 600; }
+.sc-no-data { color: var(--cream-dark) !important; }
+/* Blow-up cell coloring */
+.sc-blowup-high { color: var(--red) !important; font-weight: 600; }
+.sc-blowup-warn { color: var(--gold) !important; font-weight: 500; }
+.sc-under-good  { color: var(--green-bright) !important; font-weight: 500; }
+/* Penalty flag */
+.sc-pen { color: var(--red); font-size: 0.7rem; }
+
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">Chasing <em>Bogeys</em></a>
+  <ul class="nav-links">
+    <li><a href="index.html#tools">Tools</a></li>
+    <li><a href="index.html#blog">Blog</a></li>
+    <li><a href="index.html#about">About</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="tool-hero">
+  <div class="hero-inner">
+    <p class="tool-eyebrow">Chasing Bogeys · Tool</p>
+    <h1 class="tool-title"><em>Home Course Tracker</em></h1>
+    <p class="tool-sub">Track every round at your regular courses. Spot patterns, find your blow-up holes, and measure real improvement over time.</p>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div>
+      <div class="sidebar-section-label">My Courses</div>
+      <div class="course-list" id="course-list">
+        <!-- populated by JS -->
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:0.5rem;">
+      <button class="sidebar-btn" onclick="openModal('add-course-modal')">＋ Add Course</button>
+      <button class="sidebar-btn" onclick="openModal('enter-round-modal')">＋ Enter Round</button>
+    </div>
+    <div class="sidebar-ghin">
+      <div class="ghin-status">
+        <div class="ghin-dot" id="ghin-dot"></div>
+        <span id="ghin-status-text">GHIN not connected</span>
+      </div>
+      <a onclick="openModal('settings-modal')">Connect GHIN →</a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content" id="main-content">
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">⛳</div>
+      <h2 class="empty-title">No course selected</h2>
+      <p class="empty-sub">Add your home course and enter your first round to start tracking your stats hole by hole.</p>
+      <button class="btn-primary" onclick="openModal('add-course-modal')">Add My Course</button>
+    </div>
+
+    <div id="course-view" style="display:none;">
+      <!-- TAB NAV -->
+      <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('stats')">Hole Stats</button>
+        <button class="tab-btn" onclick="switchTab('rounds')">Round History</button>
+        <button class="tab-btn" onclick="switchTab('handicap')">Course Handicap</button>
+        <button class="tab-btn" onclick="switchTab('penalties')">Penalties ★</button>
+        <button class="tab-btn" onclick="switchTab('shortgame')">Short Game ★</button>
+        <button class="tab-btn" onclick="switchTab('journal')">Round Journal</button>
+        <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+      </div>
+
+      <!-- TAB: HOLE STATS -->
+      <div id="tab-stats">
+        <div class="summary-cards" id="summary-cards"></div>
+        <div id="scorecard-display"></div>
+        <p style="font-size:0.72rem;color:var(--text-muted);margin-top:1rem;">★ Penalty stats require Premium (coming soon). Data is tracked now and will be ready when you upgrade.</p>
+      </div>
+
+      <!-- TAB: ROUNDS -->
+      <div id="tab-rounds" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+          <h2 style="font-family:var(--serif);font-size:1.3rem;color:var(--green-deep);">Round History</h2>
+          <button class="btn-primary" onclick="openModal('enter-round-modal')">＋ Enter Round</button>
+        </div>
+        <div class="rounds-list" id="rounds-list"></div>
+      </div>
+
+      <!-- TAB: HANDICAP -->
+      <div id="tab-handicap" style="display:none;">
+        <div class="handicap-section">
+          <div class="handicap-display">
+            <div class="handicap-label">Course Handicap Index</div>
+            <div class="handicap-number" id="handicap-number">—</div>
+            <div class="handicap-sub" id="handicap-sub">Enter at least 3 rounds to calculate</div>
+          </div>
+          <div class="handicap-note">
+            This is your <strong>course-specific handicap index</strong> — what your handicap would be if only rounds from this course were submitted to GHIN. Calculated using the full USGA scoring differential formula: (Score − Course Rating) × 113 ÷ Slope. The best differentials are averaged per USGA guidelines (best 1 of 3, best 1 of 4, best lowest 2 of 5+, etc.).
+          </div>
+          <div class="sidebar-section-label" style="margin-bottom:0.75rem;">Scoring Differentials</div>
+          <div class="differential-list" id="differential-list"></div>
+        </div>
+      </div>
+
+      <!-- TAB: PENALTIES (PREMIUM) -->
+      <div id="tab-penalties" style="display:none;">
+        <div style="background:var(--gold-light);border-radius:8px;padding:0.75rem 1.25rem;margin-bottom:0.75rem;font-size:0.82rem;color:var(--green-deep);">
+          <strong>Premium Feature</strong> — Penalty tracking is coming to the premium tier. Your penalty data is already being saved with every round so it will be ready when you upgrade.
+        </div>
+        <div style="background:var(--blue-light);border-radius:8px;padding:0.75rem 1.25rem;margin-bottom:1.5rem;font-size:0.82rem;color:var(--blue);">
+          <strong>Coming soon — Player Summary page</strong> will include a per-round penalty summary alongside your season totals, so you can see exactly which rounds cost you the most strokes. Penalty counts already appear per hole in the Hole Stats tab.
+        </div>
+        <div class="penalty-summary-grid" id="penalty-summary"></div>
+        <div class="stats-table-wrap">
+          <table class="stats-table" id="penalty-table">
+            <thead>
+              <tr><th>Hole</th><th>Par</th><th>Total Penalties</th><th>Tee Shot</th><th>Approach</th><th>Short Game</th><th>OB / Lost</th><th>Hazard</th><th>Local Rule</th></tr>
+            </thead>
+            <tbody id="penalty-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: SHORT GAME (PREMIUM) -->
+      <div id="tab-shortgame" style="display:none;">
+        <div style="background:var(--gold-light);border-radius:8px;padding:0.75rem 1.25rem;margin-bottom:0.75rem;font-size:0.82rem;color:var(--green-deep);">
+          <strong>Premium Feature</strong> — Short game stats are coming to the premium tier. Your chip, pitch, and putt data is being saved now.
+        </div>
+        <div style="background:var(--blue-light);border-radius:8px;padding:0.75rem 1.25rem;margin-bottom:1.5rem;font-size:0.82rem;color:var(--blue);">
+          <strong>Coming soon — Player Summary page</strong> will show per-round up-and-down stats and putting averages alongside your overall career percentages. <strong>Up &amp; down definition:</strong> exactly 1 chip or pitch (not both) followed by exactly 1 putt. Multiple short game shots on one hole = no credit.
+        </div>
+        <div class="short-game-grid">
+          <div class="short-game-card">
+            <div class="short-game-title">Up & Down — Pitches</div>
+            <div class="short-game-pct" id="pitch-updown">—%</div>
+            <div class="short-game-sub" id="pitch-threshold">Shots under 100 yds (your threshold)</div>
+            <div class="short-game-sub" style="margin-top:0.5rem;" id="pitch-count"></div>
+          </div>
+          <div class="short-game-card">
+            <div class="short-game-title">Up & Down — Chips</div>
+            <div class="short-game-pct" id="chip-updown">—%</div>
+            <div class="short-game-sub" id="chip-threshold">Shots under 25 yds (your threshold)</div>
+            <div class="short-game-sub" style="margin-top:0.5rem;" id="chip-count"></div>
+          </div>
+        </div>
+        <div class="summary-cards" id="shortgame-cards"></div>
+      </div>
+
+      <!-- TAB: JOURNAL -->
+      <div id="tab-journal" style="display:none;">
+        <div class="journal-wall-header">
+          <h2 class="journal-wall-title">Round Journal</h2>
+          <div class="journal-share-toggle">
+            Share my best shots to community wall
+            <label class="toggle-switch">
+              <input type="checkbox" id="global-share-toggle">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="community-banner">
+          <div class="banner-label">From the fairway — community highlights ✦ AI-summarized from member journals</div>
+          <div class="banner-scroll" id="banner-scroll">
+            <span class="banner-item"><strong>Shawn H.</strong> — A pure 7-iron from 155 tracked the flag all the way and left a tap-in birdie. &nbsp;&nbsp;&nbsp;✦&nbsp;&nbsp;&nbsp;</span>
+            <span class="banner-item"><strong>Mike T.</strong> — Finally holed out from a greenside bunker — watched it roll to inches while the group went silent. &nbsp;&nbsp;&nbsp;✦&nbsp;&nbsp;&nbsp;</span>
+            <span class="banner-item"><strong>David R.</strong> — Hit the par-4 third green in one for the first time in twelve years at the same course. &nbsp;&nbsp;&nbsp;✦&nbsp;&nbsp;&nbsp;</span>
+            <span class="banner-item"><strong>Shawn H.</strong> — Drained a slippery 20-footer for par on the hardest hole on the card to save a great round. &nbsp;&nbsp;&nbsp;✦&nbsp;&nbsp;&nbsp;</span>
+            <span class="banner-item"><strong>Karen M.</strong> — Her best chip of the season checked up inside a foot on a tucked pin she'd been nervous about all day. &nbsp;&nbsp;&nbsp;✦&nbsp;&nbsp;&nbsp;</span>
+            <span class="banner-item"><strong>Shawn H.</strong> — A pure 7-iron from 155 tracked the flag all the way and left a tap-in birdie. &nbsp;&nbsp;&nbsp;✦&nbsp;&nbsp;&nbsp;</span>
+            <span class="banner-item"><strong>Mike T.</strong> — Finally holed out from a greenside bunker — watched it roll to inches while the group went silent. &nbsp;&nbsp;&nbsp;✦&nbsp;&nbsp;&nbsp;</span>
+            <span class="banner-item"><strong>David R.</strong> — Hit the par-4 third green in one for the first time in twelve years at the same course. &nbsp;&nbsp;&nbsp;✦&nbsp;&nbsp;&nbsp;</span>
+            <span class="banner-item"><strong>Karen M.</strong> — Her best chip of the season checked up inside a foot on a tucked pin she'd been nervous about all day. &nbsp;&nbsp;&nbsp;✦&nbsp;&nbsp;&nbsp;</span>
+          </div>
+        </div>
+        <p style="font-size:0.72rem;color:var(--text-muted);margin-bottom:1.5rem;line-height:1.65;">Community highlights are AI-generated summaries of members' journal entries, attributed by first name and last initial. Sharing is always opt-in and can be turned off at any time. Live community wall requires account creation (coming soon).</p>
+        <div class="journal-entries" id="journal-entries">
+          <div class="empty-state" style="padding:2rem;">
+            <div class="empty-icon" style="font-size:2rem;">📓</div>
+            <p class="empty-sub">No journal entries yet. Add one when you enter your next round.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: SETTINGS -->
+      <div id="tab-settings" style="display:none;">
+        <h2 style="font-family:var(--serif);font-size:1.3rem;color:var(--green-deep);margin-bottom:1.5rem;">Settings</h2>
+        <div class="settings-grid">
+          <div class="settings-card">
+            <div class="settings-card-title">GHIN Account</div>
+            <div class="form-group">
+              <label class="form-label">GHIN Number</label>
+              <input class="form-input" type="text" id="setting-ghin-num" placeholder="e.g. 1234567">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Last Name</label>
+              <input class="form-input" type="text" id="setting-ghin-last" placeholder="Your last name">
+            </div>
+            <button class="btn-primary" onclick="saveGHIN()">Save GHIN Settings</button>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title">Short Game Thresholds</div>
+            <div class="form-group">
+              <label class="form-label">Pitch shot — under <span>(yards)</span></label>
+              <input class="form-input" type="number" id="setting-pitch-yds" value="100" min="20" max="200">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Chip shot — under <span>(yards)</span></label>
+              <input class="form-input" type="number" id="setting-chip-yds" value="25" min="5" max="60">
+            </div>
+            <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title">Handicap Index Override</div>
+            <div class="form-group">
+              <label class="form-label">Manual Handicap Index <span>(optional)</span></label>
+              <input class="form-input" type="number" id="setting-hcp" placeholder="e.g. 14.2" step="0.1" min="0" max="54">
+            </div>
+            <p style="font-size:0.75rem;color:var(--text-muted);line-height:1.6;">Leave blank to use the automatically calculated course handicap. Use this if your GHIN index differs significantly.</p>
+            <button class="btn-primary" onclick="saveSettings()" style="margin-top:1rem;">Save</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end course-view -->
+  </main>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: ADD COURSE
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="add-course-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Add a Course</h3>
+      <button class="modal-close" onclick="closeModal('add-course-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-tab-row">
+        <button class="modal-tab active" onclick="switchModalTab('search')">Search GHIN</button>
+        <button class="modal-tab" onclick="switchModalTab('manual')">Enter Manually</button>
+      </div>
+
+      <div id="modal-tab-search">
+        <div class="form-group">
+          <label class="form-label">Course Name</label>
+          <input class="form-input" type="text" id="ghin-search-input" placeholder="e.g. Avalon Golf Links">
+        </div>
+        <button class="btn-primary" onclick="searchGHIN()">Search GHIN</button>
+        <div id="ghin-results" style="margin-top:1rem;"></div>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-top:1rem;line-height:1.6;">GHIN integration will auto-populate course rating, slope, and hole pars. Requires GHIN connection in Settings.</p>
+      </div>
+
+      <div id="modal-tab-manual" style="display:none;">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Course Name</label>
+            <input class="form-input" type="text" id="course-name" placeholder="e.g. Avalon Golf Links">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Location <span>(optional)</span></label>
+            <input class="form-input" type="text" id="course-location" placeholder="City, State">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Course Rating</label>
+            <input class="form-input" type="number" id="course-rating" placeholder="e.g. 71.4" step="0.1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Slope Rating</label>
+            <input class="form-input" type="number" id="course-slope" placeholder="e.g. 128">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Par</label>
+            <input class="form-input" type="number" id="course-par" placeholder="e.g. 72">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Holes</label>
+            <select class="form-input" id="course-holes">
+              <option value="18">18 holes</option>
+              <option value="9">9 holes</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="complex-toggle">
+          <label class="toggle-switch">
+            <input type="checkbox" id="is-complex" onchange="toggleComplex()">
+            <span class="toggle-slider"></span>
+          </label>
+          <div>
+            <div style="font-weight:500;font-size:0.85rem;color:var(--text-dark);">27-hole complex</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);">Links this course to its sister nines (e.g. Avalon Golf Links)</div>
+          </div>
+        </div>
+
+        <div id="complex-fields" style="display:none;">
+          <div class="form-section-title">27-Hole Complex Setup</div>
+          <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.6;">Give your complex a name and label each nine. Rounds entered for any rotation (e.g. North/West) will automatically feed stats for each individual nine.</p>
+          <div class="form-group">
+            <label class="form-label">Complex Name</label>
+            <input class="form-input" type="text" id="complex-name" placeholder="e.g. Avalon Golf Links">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nine A Name</label>
+              <input class="form-input" type="text" id="nine-a" placeholder="e.g. North">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nine B Name</label>
+              <input class="form-input" type="text" id="nine-b" placeholder="e.g. West">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nine C Name</label>
+            <input class="form-input" type="text" id="nine-c" placeholder="e.g. South">
+          </div>
+          <p style="font-size:0.75rem;color:var(--text-muted);line-height:1.6;">This creates three rotation courses (A/B, B/C, C/A) and lets you view combined stats for each individual nine.</p>
+        </div>
+
+        <div class="form-section-title" style="margin-top:1.5rem;">Hole Par Values</div>
+        <div id="hole-par-grid" style="display:grid;grid-template-columns:repeat(9,1fr);gap:0.5rem;margin-bottom:0.5rem;"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('add-course-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveCourse()">Add Course</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: ENTER ROUND
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="enter-round-modal">
+  <div class="modal" style="max-width:780px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Enter a Round</h3>
+      <button class="modal-close" onclick="closeModal('enter-round-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Course</label>
+          <select class="form-input" id="round-course" onchange="onRoundCourseChange()">
+            <option value="">— Select course —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input class="form-input" type="date" id="round-date">
+        </div>
+      </div>
+
+      <!-- Scorecard -->
+      <div id="round-scorecard-wrap" style="display:none;">
+        <div class="form-section-title">Scorecard</div>
+        <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.75rem;">Enter score, putts, and any penalties for each hole. Chip/pitch counts are optional premium tracking.</p>
+        <div style="overflow-x:auto;">
+          <table class="scorecard-grid" id="round-scorecard">
+            <thead>
+              <tr>
+                <td style="color:var(--text-muted);font-size:0.72rem;padding:0.4rem;">Hole</td>
+                <td style="text-align:center;color:var(--text-muted);font-size:0.72rem;">Par</td>
+                <td style="text-align:center;color:var(--green-deep);font-size:0.72rem;font-weight:500;">Score</td>
+                <td style="text-align:center;color:var(--blue);font-size:0.72rem;">Putts</td>
+                <td style="text-align:center;color:var(--text-muted);font-size:0.72rem;">Penalty ★</td>
+                <td style="text-align:center;color:var(--text-muted);font-size:0.72rem;">Chips ★</td>
+                <td style="text-align:center;color:var(--text-muted);font-size:0.72rem;">Pitches ★</td>
+              </tr>
+            </thead>
+            <tbody id="round-scorecard-body"></tbody>
+            <tfoot id="round-scorecard-foot"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Journal -->
+      <div id="round-journal-wrap" style="display:none;margin-top:1.25rem;">
+        <div class="form-section-title" style="border-top:1px solid var(--cream-dark);padding-top:1rem;">Round Journal <span style="font-size:0.72rem;color:var(--gold);font-weight:300;font-style:italic;">optional</span></div>
+        <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.65;">Every round has bright spots — even the rough ones. Take a moment to note yours.</p>
+        <div class="journal-section">
+          <div class="form-group">
+            <span class="journal-prompt">Best tee shot of the day</span>
+            <span class="journal-affirmation">Think about your best drive — the one that felt effortless off the face.</span>
+            <textarea class="form-input" id="j-tee" rows="2" placeholder="Describe it..."></textarea>
+          </div>
+          <div class="form-group">
+            <span class="journal-prompt">Best approach shot</span>
+            <span class="journal-affirmation">A well-struck iron is something to savor. Which one stood out today?</span>
+            <textarea class="form-input" id="j-approach" rows="2" placeholder="Describe it..."></textarea>
+          </div>
+          <div class="form-group">
+            <span class="journal-prompt">Best short game shot</span>
+            <span class="journal-affirmation">A clutch putt, a tidy chip, a bunker save — what was your moment?</span>
+            <textarea class="form-input" id="j-short" rows="2" placeholder="Describe it..."></textarea>
+          </div>
+          <div class="form-group">
+            <span class="journal-prompt">Any other thoughts?</span>
+            <span class="journal-affirmation">Keep it constructive — what did you learn, or what will you work on next time?</span>
+            <textarea class="form-input" id="j-notes" rows="3" placeholder="Notes on your round..."></textarea>
+          </div>
+          <div class="share-toggle-row">
+            <label class="toggle-switch">
+              <input type="checkbox" id="j-share">
+              <span class="toggle-slider"></span>
+            </label>
+            Share my best shots on the Chasing Bogeys community wall
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('enter-round-modal')">Cancel</button>
+      <button class="btn-primary btn-gold" onclick="saveRound()">Save Round</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: PENALTY
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="penalty-modal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="penalty-modal-title">Add Penalty — Hole 1</h3>
+      <button class="modal-close" onclick="closeModal('penalty-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <div class="form-label">Shot type</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;margin-bottom:1rem;">
+          <button class="penalty-type-btn" data-field="shot" data-val="tee" onclick="selectPenaltyField(this,'shot')"><span class="p-type">Tee Shot</span></button>
+          <button class="penalty-type-btn" data-field="shot" data-val="approach" onclick="selectPenaltyField(this,'shot')"><span class="p-type">Approach</span></button>
+          <button class="penalty-type-btn" data-field="shot" data-val="short" onclick="selectPenaltyField(this,'shot')"><span class="p-type">Short Game</span></button>
+        </div>
+        <div class="form-label">Penalty type</div>
+        <div class="penalty-type-grid">
+          <button class="penalty-type-btn" data-field="type" data-val="ob" onclick="selectPenaltyField(this,'type')">
+            <span class="p-type">OB / Lost Ball</span>
+            <span class="p-strokes">Stroke and distance +1</span>
+          </button>
+          <button class="penalty-type-btn" data-field="type" data-val="hazard" onclick="selectPenaltyField(this,'type')">
+            <span class="p-type">Hazard</span>
+            <span class="p-strokes">Lateral or back-of-line +1</span>
+          </button>
+          <button class="penalty-type-btn" data-field="type" data-val="local" onclick="selectPenaltyField(this,'type')">
+            <span class="p-type">Local Rule E-5</span>
+            <span class="p-strokes">Fairway drop +2</span>
+          </button>
+          <button class="penalty-type-btn" data-field="type" data-val="remove" onclick="selectPenaltyField(this,'type')">
+            <span class="p-type" style="color:var(--text-muted)">Remove Penalty</span>
+            <span class="p-strokes">Clear this hole</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('penalty-modal')">Cancel</button>
+      <button class="btn-primary" onclick="savePenalty()">Save Penalty</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: SETTINGS
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Settings</h3>
+      <button class="modal-close" onclick="closeModal('settings-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">GHIN Number</label>
+        <input class="form-input" type="text" id="modal-ghin-num" placeholder="e.g. 1234567">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Last Name</label>
+        <input class="form-input" type="text" id="modal-ghin-last" placeholder="Your last name">
+      </div>
+      <p style="font-size:0.78rem;color:var(--text-muted);line-height:1.65;margin-bottom:1.25rem;">Live GHIN login requires a server-side proxy (in development). Your GHIN number is used now for course lookup and will enable score posting when the integration is complete.</p>
+      <div class="form-group">
+        <label class="form-label">Pitch threshold <span>(yards)</span></label>
+        <input class="form-input" type="number" id="modal-pitch" value="100" min="20" max="200">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Chip threshold <span>(yards)</span></label>
+        <input class="form-input" type="number" id="modal-chip" value="25" min="5" max="60">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('settings-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveGHIN()">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-logo">Chasing <em>Bogeys</em></div>
+  <div class="footer-links">
+    <a href="index.html">Home</a>
+    <a href="what-ball.html">What Ball?</a>
+    <a href="index.html#blog">Blog</a>
+  </div>
+</footer>
+
+<script>
+// ════════════════════════════════════════
+// STATE & STORAGE
+// ════════════════════════════════════════
+let state = {
+  courses: [],
+  rounds: [],
+  settings: { ghinNum:'', ghinLast:'', pitchYds:100, chipYds:25, hcpOverride:null },
+  activeCourseId: null,
+  activeTab: 'stats'
+};
+
+function saveState() { try { localStorage.setItem('cb_hct_v1', JSON.stringify(state)); } catch(e){} }
+function loadState() {
+  try {
+    const s = localStorage.getItem('cb_hct_v1');
+    if (s) state = JSON.parse(s);
+  } catch(e){}
+}
+
+// ════════════════════════════════════════
+// SAMPLE DATA
+// ════════════════════════════════════════
+function loadSampleData() {
+  if (state.courses.length) return;
+  const avalon_nw = {
+    id:'avalon_nw', name:'North / West', location:'Burlington, WA',
+    rating:71.8, slope:127, par:72, holes:18,
+    isComplex:true, complexName:'Avalon Golf Links', complexId:'avalon',
+    nines:['North','West'],
+    holePars:[4,3,5,4,4,3,5,4,4, 4,4,5,3,4,4,3,5,4]
+  };
+  const avalon_ws = {
+    id:'avalon_ws', name:'West / South', location:'Burlington, WA',
+    rating:70.9, slope:124, par:72, holes:18,
+    isComplex:true, complexName:'Avalon Golf Links', complexId:'avalon',
+    nines:['West','South'],
+    holePars:[4,4,5,3,4,4,3,5,4, 4,3,5,4,4,3,5,4,4]
+  };
+  const avalon_sn = {
+    id:'avalon_sn', name:'South / North', location:'Burlington, WA',
+    rating:71.2, slope:125, par:72, holes:18,
+    isComplex:true, complexName:'Avalon Golf Links', complexId:'avalon',
+    nines:['South','North'],
+    holePars:[4,3,5,4,4,3,5,4,4, 4,3,5,4,4,3,5,4,4]
+  };
+  state.courses = [avalon_nw, avalon_ws, avalon_sn];
+
+  // Sample rounds
+  const rounds = [
+    { id:'r1', courseId:'avalon_nw', date:'2025-05-10', scores:[5,3,6,5,5,3,5,5,5, 5,5,6,4,5,4,4,6,5],
+      putts:[2,1,2,2,2,2,2,2,2, 2,2,2,2,2,2,1,2,2], penalties:[], chips:[], pitches:[],
+      journal:{tee:'Striped a drive down the middle on 1',approach:'Stuck a 7-iron on 14 to 8 feet',short:'Made a slippery 12-footer for par on 7',notes:'Good round overall. Need to work on lag putting.',share:true}
+    },
+    { id:'r2', courseId:'avalon_nw', date:'2025-05-24', scores:[5,4,6,5,5,3,6,5,5, 5,5,7,3,5,5,4,6,5],
+      putts:[2,2,2,2,2,1,3,2,2, 2,2,3,1,2,2,2,2,2], penalties:[{hole:2,shot:'tee',type:'ob'},{hole:11,shot:'approach',type:'hazard'}], chips:[], pitches:[],
+      journal:{tee:'',approach:'',short:'',notes:'',share:false}
+    },
+    { id:'r3', courseId:'avalon_nw', date:'2025-06-07', scores:[5,3,5,5,5,3,5,5,5, 5,5,6,4,5,4,4,5,5],
+      putts:[2,1,2,2,2,1,2,2,2, 2,2,2,2,2,1,2,2,2], penalties:[], chips:[], pitches:[],
+      journal:{tee:'Best drive of the year on 3',approach:'',short:'Made a good chip on 16 to save par',notes:'Trending in the right direction.',share:true}
+    },
+    { id:'r4', courseId:'avalon_ws', date:'2025-06-14', scores:[5,5,6,4,5,4,4,5,5, 5,3,6,5,5,4,6,5,5],
+      putts:[2,2,2,1,2,2,1,2,2, 2,1,2,2,2,2,2,2,2], penalties:[], chips:[], pitches:[],
+      journal:{tee:'',approach:'',short:'',notes:'',share:false}
+    },
+  ];
+  state.rounds = rounds;
+  state.activeCourseId = 'avalon_nw';
+  saveState();
+}
+
+// ════════════════════════════════════════
+// MODAL HELPERS
+// ════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if (id === 'enter-round-modal') populateRoundModal();
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+function switchModalTab(tab) {
+  document.querySelectorAll('.modal-tab').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('modal-tab-search').style.display = tab === 'search' ? '' : 'none';
+  document.getElementById('modal-tab-manual').style.display = tab === 'manual' ? '' : 'none';
+}
+
+// ════════════════════════════════════════
+// SIDEBAR & COURSE LIST
+// ════════════════════════════════════════
+function renderSidebar() {
+  const list = document.getElementById('course-list');
+  if (!state.courses.length) {
+    list.innerHTML = '<div style="font-size:0.8rem;color:var(--text-muted);padding:0.5rem;">No courses yet.</div>';
+    return;
+  }
+  // Group complexes
+  const complexMap = {};
+  const standalone = [];
+  state.courses.forEach(c => {
+    if (c.isComplex) {
+      if (!complexMap[c.complexId]) complexMap[c.complexId] = { name:c.complexName, courses:[] };
+      complexMap[c.complexId].courses.push(c);
+    } else standalone.push(c);
+  });
+
+  let html = '';
+  Object.values(complexMap).forEach(cx => {
+    html += `<div style="font-size:0.7rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);padding:0.5rem 0.5rem 0.25rem;">${cx.name} <span class="course-complex-badge">27</span></div>`;
+    cx.courses.forEach(c => {
+      const rounds = state.rounds.filter(r=>r.courseId===c.id).length;
+      const active = state.activeCourseId === c.id;
+      html += `<div class="course-item ${active?'active':''}" onclick="selectCourse('${c.id}')">
+        <span>${c.name}</span>
+        <span class="course-round-count">${rounds} ${rounds===1?'round':'rounds'}</span>
+      </div>`;
+    });
+  });
+  standalone.forEach(c => {
+    const rounds = state.rounds.filter(r=>r.courseId===c.id).length;
+    const active = state.activeCourseId === c.id;
+    html += `<div class="course-item ${active?'active':''}" onclick="selectCourse('${c.id}')">
+      <span>${c.name}</span>
+      <span class="course-round-count">${rounds} ${rounds===1?'round':'rounds'}</span>
+    </div>`;
+  });
+  list.innerHTML = html;
+}
+
+function selectCourse(id) {
+  state.activeCourseId = id;
+  saveState();
+  renderAll();
+}
+
+// ════════════════════════════════════════
+// TAB SWITCHING
+// ════════════════════════════════════════
+function switchTab(tab) {
+  state.activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  ['stats','rounds','handicap','penalties','shortgame','journal','settings'].forEach(t => {
+    const el = document.getElementById('tab-'+t);
+    if (el) el.style.display = t === tab ? '' : 'none';
+  });
+}
+
+// ════════════════════════════════════════
+// SUMMARY CARDS
+// ════════════════════════════════════════
+function renderSummaryCards(courseId) {
+  const course = state.courses.find(c=>c.id===courseId);
+  const rounds  = state.rounds.filter(r=>r.courseId===courseId);
+  const el      = document.getElementById('summary-cards');
+  if (!el) return;
+  if (!rounds.length) { el.innerHTML = ''; return; }
+  const allScores  = rounds.map(r => r.scores.reduce((a,b)=>a+b,0));
+  const avg        = allScores.reduce((a,b)=>a+b,0) / allScores.length;
+  const low        = Math.min(...allScores);
+  const high       = Math.max(...allScores);
+  const last5      = allScores.slice(-5);
+  const last5avg   = last5.reduce((a,b)=>a+b,0) / last5.length;
+  el.innerHTML = `
+    <div class="summary-card highlight">
+      <div class="summary-label">Rounds Played</div>
+      <div class="summary-val">${rounds.length}</div>
+      <div class="summary-sub">${course.name}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Avg Score</div>
+      <div class="summary-val">${avg.toFixed(1)}</div>
+      <div class="summary-sub">+${(avg - course.par).toFixed(1)} to par</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Low Round</div>
+      <div class="summary-val">${low}</div>
+      <div class="summary-sub">+${low - course.par} to par</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Trending</div>
+      <div class="summary-val">${last5avg.toFixed(1)}</div>
+      <div class="summary-sub">Avg last ${last5.length} rounds</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">High Round</div>
+      <div class="summary-val">${high}</div>
+      <div class="summary-sub">+${high - course.par} to par</div>
+    </div>
+  `;
+}
+
+// ════════════════════════════════════════
+// STATS CALCULATION
+// ════════════════════════════════════════
+const SCORE_NAMES = {'-3':'Albatross','-2':'Eagle','-1':'Birdie','0':'Par','1':'Bogey','2':'Dbl Bogey','3':'Triple'};
+function scoreName(diff) {
+  if (diff <= -3) return 'Albatross';
+  if (diff >= 3)  return 'Triple+';
+  return SCORE_NAMES[String(diff)] || (diff > 0 ? '+'+diff : String(diff));
+}
+
+function scoreClass(diff) {
+  if (diff <= -2) return 'sc-eagle';
+  if (diff === -1) return 'sc-birdie';
+  if (diff === 0)  return 'sc-bogey';
+  if (diff === 1)  return 'sc-bogey';
+  if (diff === 2)  return 'sc-double';
+  return 'sc-triple';
+}
+
+function calcHoleStats(courseId) {
+  const course = state.courses.find(c=>c.id===courseId);
+  if (!course) return [];
+  const rounds = state.rounds.filter(r=>r.courseId===courseId);
+  return course.holePars.map((par,i) => {
+    const scores = rounds.map(r=>r.scores[i]).filter(s=>s!=null&&s>0);
+    if (!scores.length) return { hole:i+1, par, avg:null, common:null, commonDiff:null, blowup:null, trending:null, underPar:null, penalties:0 };
+    const avg = scores.reduce((a,b)=>a+b,0)/scores.length;
+    const freqMap = {};
+    scores.forEach(s=>{ freqMap[s]=(freqMap[s]||0)+1; });
+    const common = parseInt(Object.entries(freqMap).sort((a,b)=>b[1]-a[1])[0][0]);
+    const blowup = scores.filter(s=>s-par>=3).length/scores.length*100;
+    const last5 = scores.slice(-5);
+    const trending = last5.reduce((a,b)=>a+b,0)/last5.length;
+    const underPar = scores.filter(s=>s<par).length/scores.length*100;
+    const penalties = rounds.reduce((sum,r)=>sum+(r.penalties||[]).filter(p=>p.hole===i+1).length,0);
+    return { hole:i+1, par, avg, common, commonDiff:common-par, blowup, trending, underPar, penalties };
+  });
+}
+
+function renderStatsTable(courseId) {
+  // No-op: kept for compatibility. Scorecard rendering handled by renderScorecardDisplay.
+}
+
+function renderScorecardDisplay(courseId) {
+  const course = state.courses.find(c=>c.id===courseId);
+  const container = document.getElementById('scorecard-display');
+  if (!course || !container) return;
+
+  const stats = calcHoleStats(courseId);
+  const rounds = state.rounds.filter(r=>r.courseId===courseId);
+  const nineLabels = course.nines || ['Front', 'Back'];
+  const total = course.holePars.length;
+  const has18 = total >= 18;
+
+  // Split into front (0-8) and back (9-17)
+  const front = stats.slice(0, 9);
+  const back  = has18 ? stats.slice(9, 18) : [];
+
+  function buildNine(holes, label, offset) {
+    const holeNums = holes.map(h => h.hole);
+    const pars     = holes.map(h => h.par);
+    const outPar   = pars.reduce((a,b)=>a+b,0);
+
+    // Stat rows: avg score, most common, trending, blow-up %, under par %, penalties
+    function cell(h, fn) {
+      if (h.avg === null) return `<td class="sc-no-data">—</td>`;
+      return fn(h);
+    }
+
+    function avgCell(h) {
+      const diff = h.avg - h.par;
+      const cls = diff <= 0 ? 'sc-birdie' : diff >= 2 ? 'sc-double' : '';
+      return `<td class="${cls}">${h.avg.toFixed(1)}</td>`;
+    }
+    function commonCell(h) {
+      const cls = scoreClass(h.commonDiff);
+      return `<td class="${cls}">${scoreName(h.commonDiff)}</td>`;
+    }
+    function trendCell(h) {
+      const diff = h.trending - h.par;
+      const cls = diff <= 0 ? 'sc-birdie' : diff >= 2 ? 'sc-double' : '';
+      return `<td class="${cls}">${h.trending.toFixed(1)}</td>`;
+    }
+    function blowupCell(h) {
+      const cls = h.blowup >= 25 ? 'sc-blowup-high' : h.blowup >= 10 ? 'sc-blowup-warn' : '';
+      return `<td class="${cls}">${h.blowup.toFixed(0)}%</td>`;
+    }
+    function underParCell(h) {
+      const cls = h.underPar >= 15 ? 'sc-under-good' : '';
+      return `<td class="${cls}">${h.underPar.toFixed(0)}%</td>`;
+    }
+    function penaltyCell(h) {
+      if (!h.penalties) return `<td>—</td>`;
+      return `<td class="sc-pen">⚑ ${h.penalties}</td>`;
+    }
+
+    // OUT column totals
+    const avgOut     = holes.every(h=>h.avg!==null)     ? holes.reduce((s,h)=>s+h.avg,0).toFixed(1)     : '—';
+    const trendOut   = holes.every(h=>h.trending!==null) ? holes.reduce((s,h)=>s+h.trending,0).toFixed(1) : '—';
+    const blowupOut  = holes.every(h=>h.blowup!==null)  ? (holes.reduce((s,h)=>s+h.blowup,0)/holes.length).toFixed(0)+'%' : '—';
+    const underOut   = holes.every(h=>h.underPar!==null) ? (holes.reduce((s,h)=>s+h.underPar,0)/holes.length).toFixed(0)+'%' : '—';
+    const penOut     = holes.reduce((s,h)=>s+h.penalties,0) || '—';
+
+    const holeHeader = holeNums.map(n=>`<th>${n}</th>`).join('') + `<th class="sc-out">${label === nineLabels[0] ? 'OUT' : 'IN'}</th>`;
+
+    return `
+      <div class="scorecard-block">
+        <div class="scorecard-block-header">
+          <span class="scorecard-nine-label">${label} Nine</span>
+          <span class="scorecard-nine-out">${rounds.length} round${rounds.length===1?'':'s'} tracked</span>
+        </div>
+        <table class="sc-table">
+          <thead>
+            <tr>
+              <th>Stat</th>
+              ${holeHeader}
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="sc-par-row">
+              <td>Par</td>
+              ${pars.map(p=>`<td>${p}</td>`).join('')}
+              <td class="sc-out">${outPar}</td>
+            </tr>
+            <tr>
+              <td>Avg Score</td>
+              ${holes.map(h=>cell(h, avgCell)).join('')}
+              <td class="sc-out">${avgOut}</td>
+            </tr>
+            <tr>
+              <td>Most Common</td>
+              ${holes.map(h=>cell(h, commonCell)).join('')}
+              <td class="sc-out">—</td>
+            </tr>
+            <tr>
+              <td>Trending (5)</td>
+              ${holes.map(h=>cell(h, trendCell)).join('')}
+              <td class="sc-out">${trendOut}</td>
+            </tr>
+            <tr>
+              <td>Blow-up %</td>
+              ${holes.map(h=>cell(h, blowupCell)).join('')}
+              <td class="sc-out">${blowupOut}</td>
+            </tr>
+            <tr>
+              <td>Under Par %</td>
+              ${holes.map(h=>cell(h, underParCell)).join('')}
+              <td class="sc-out">${underOut}</td>
+            </tr>
+            <tr>
+              <td>Penalties ★</td>
+              ${holes.map(h=>cell(h, penaltyCell)).join('')}
+              <td class="sc-out">${penOut !== '—' ? '⚑ '+penOut : '—'}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  let html = buildNine(front, nineLabels[0], 0);
+  if (back.length) html += buildNine(back, nineLabels[1], 9);
+  container.innerHTML = html;
+}
+
+// ════════════════════════════════════════
+// ROUNDS LIST
+// ════════════════════════════════════════
+function renderRoundsList(courseId) {
+  const course = state.courses.find(c=>c.id===courseId);
+  if (!course) return;
+  const rounds = state.rounds.filter(r=>r.courseId===courseId).sort((a,b)=>b.date.localeCompare(a.date));
+  const el = document.getElementById('rounds-list');
+  if (!rounds.length) { el.innerHTML = '<div class="empty-state" style="padding:2rem;"><p class="empty-sub">No rounds yet for this course.</p></div>'; return; }
+  el.innerHTML = rounds.map(r => {
+    const total = r.scores.reduce((a,b)=>a+b,0);
+    const diff = total - course.par;
+    const hasJournal = r.journal && (r.journal.tee || r.journal.approach || r.journal.short);
+    return `<div class="round-card">
+      <div>
+        <div class="round-date">${formatDate(r.date)}</div>
+        <div class="round-course">${course.name}</div>
+        <div class="round-nine">${course.location || ''}</div>
+        ${hasJournal ? '<div class="round-journal-icon">📓 Journal entry</div>' : ''}
+      </div>
+      <div></div>
+      <div>
+        <div class="round-score">${total}</div>
+        <div class="round-diff ${diff>0?'over':'under'}">${diff>0?'+':''}${diff} to par</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  const dt = new Date(d+'T12:00:00');
+  return dt.toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
+}
+
+// ════════════════════════════════════════
+// HANDICAP
+// ════════════════════════════════════════
+function calcHandicap(courseId) {
+  const course = state.courses.find(c=>c.id===courseId);
+  if (!course) return null;
+  const rounds = state.rounds.filter(r=>r.courseId===courseId).sort((a,b)=>a.date.localeCompare(b.date));
+  if (rounds.length < 3) return null;
+  const diffs = rounds.map(r => {
+    const total = r.scores.reduce((a,b)=>a+b,0);
+    return parseFloat(((total - course.rating) * 113 / course.slope).toFixed(1));
+  });
+  // USGA best diff selection
+  const n = diffs.length;
+  let count;
+  if (n <= 3) count = 1;
+  else if (n === 4) count = 1;
+  else if (n === 5) count = 1;
+  else if (n <= 6) count = 2;
+  else if (n <= 8) count = 2;
+  else if (n <= 11) count = 3;
+  else if (n <= 14) count = 4;
+  else if (n <= 16) count = 5;
+  else if (n <= 18) count = 6;
+  else count = 8;
+  const sorted = [...diffs].sort((a,b)=>a-b);
+  const best = sorted.slice(0, count);
+  const avg = best.reduce((a,b)=>a+b,0)/count;
+  return { index: parseFloat((avg * 0.96).toFixed(1)), diffs, best };
+}
+
+function renderHandicap(courseId) {
+  const hcp = calcHandicap(courseId);
+  const numEl = document.getElementById('handicap-number');
+  const subEl = document.getElementById('handicap-sub');
+  const diffList = document.getElementById('differential-list');
+  const course = state.courses.find(c=>c.id===courseId);
+  const rounds = state.rounds.filter(r=>r.courseId===courseId).sort((a,b)=>a.date.localeCompare(b.date));
+
+  if (!hcp) {
+    numEl.textContent = '—';
+    subEl.textContent = `Enter at least 3 rounds to calculate (${rounds.length} so far)`;
+    diffList.innerHTML = '';
+    return;
+  }
+  numEl.textContent = hcp.index;
+  subEl.textContent = `Based on ${rounds.length} rounds at ${course.name}`;
+
+  diffList.innerHTML = rounds.map((r,i) => {
+    const d = hcp.diffs[i];
+    const isUsed = hcp.best.includes(d) && hcp.best.splice(hcp.best.indexOf(d),1) !== undefined;
+    return `<div class="diff-row ${isUsed?'used':''}">
+      <span class="diff-date">${formatDate(r.date)}</span>
+      <span class="diff-score">${r.scores.reduce((a,b)=>a+b,0)}</span>
+      <span class="diff-val">${d > 0?'+':''}${d}</span>
+      ${isUsed ? '<span class="diff-used-tag">Used</span>' : '<span></span>'}
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════
+// PENALTIES
+// ════════════════════════════════════════
+function renderPenalties(courseId) {
+  const course = state.courses.find(c=>c.id===courseId);
+  if (!course) return;
+  const rounds = state.rounds.filter(r=>r.courseId===courseId);
+  const all = rounds.flatMap(r=>r.penalties||[]);
+  const total = all.length;
+  const ob = all.filter(p=>p.type==='ob').length;
+  const haz = all.filter(p=>p.type==='hazard').length;
+  const loc = all.filter(p=>p.type==='local').length;
+  const perRound = rounds.length ? (total/rounds.length).toFixed(1) : '—';
+  document.getElementById('penalty-summary').innerHTML = `
+    <div class="penalty-card"><div class="penalty-card-label">Total Penalties</div><div class="penalty-card-val">${total}</div><div class="penalty-card-sub">${perRound}/round avg</div></div>
+    <div class="penalty-card"><div class="penalty-card-label">OB / Lost Ball</div><div class="penalty-card-val">${ob}</div></div>
+    <div class="penalty-card"><div class="penalty-card-label">Hazard</div><div class="penalty-card-val">${haz}</div></div>
+    <div class="penalty-card"><div class="penalty-card-label">Local Rule E-5</div><div class="penalty-card-val">${loc}</div></div>
+  `;
+  // Per-hole breakdown
+  const tbody = document.getElementById('penalty-body');
+  tbody.innerHTML = course.holePars.map((par,i) => {
+    const hp = rounds.flatMap(r=>(r.penalties||[]).filter(p=>p.hole===i+1));
+    if (!hp.length) return `<tr><td>${i+1}</td><td>${par}</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
+    const tee = hp.filter(p=>p.shot==='tee').length;
+    const app = hp.filter(p=>p.shot==='approach').length;
+    const sg  = hp.filter(p=>p.shot==='short').length;
+    const obH = hp.filter(p=>p.type==='ob').length;
+    const hazH = hp.filter(p=>p.type==='hazard').length;
+    const locH = hp.filter(p=>p.type==='local').length;
+    return `<tr><td>${i+1}</td><td>${par}</td><td class="stat-bad">${hp.length}</td><td>${tee||'—'}</td><td>${app||'—'}</td><td>${sg||'—'}</td><td>${obH||'—'}</td><td>${hazH||'—'}</td><td>${locH||'—'}</td></tr>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════
+// SHORT GAME
+// Up-and-down rules:
+//   • Exactly 1 short game shot (chip OR pitch, not both) on the hole
+//   • Followed by exactly 1 putt
+//   • If player had both a chip AND pitch on same hole → no credit
+// ════════════════════════════════════════
+function calcUpDown(rounds, shotType) {
+  // shotType: 'chip' | 'pitch'
+  let attempts = 0;
+  let successes = 0;
+  rounds.forEach(r => {
+    const chips   = r.chips   || [];
+    const pitches = r.pitches || [];
+    const putts   = r.putts   || [];
+    chips.forEach((chipCount, i) => {
+      const pitchCount = pitches[i] || 0;
+      const puttCount  = putts[i]   || 0;
+      if (shotType === 'chip') {
+        // Must have exactly 1 chip, 0 pitches, 1 putt
+        if (chipCount === 1 && pitchCount === 0) {
+          attempts++;
+          if (puttCount === 1) successes++;
+        }
+      }
+    });
+    pitches.forEach((pitchCount, i) => {
+      const chipCount = chips[i] || 0;
+      const puttCount = putts[i] || 0;
+      if (shotType === 'pitch') {
+        // Must have exactly 1 pitch, 0 chips, 1 putt
+        if (pitchCount === 1 && chipCount === 0) {
+          attempts++;
+          if (puttCount === 1) successes++;
+        }
+      }
+    });
+  });
+  return { attempts, successes, pct: attempts > 0 ? Math.round(successes / attempts * 100) : null };
+}
+
+function renderShortGame(courseId) {
+  const rounds = state.rounds.filter(r=>r.courseId===courseId);
+  const pitchYds = state.settings.pitchYds || 100;
+  const chipYds  = state.settings.chipYds  || 25;
+
+  document.getElementById('pitch-threshold').textContent = `Shots under ${pitchYds} yds (your threshold)`;
+  document.getElementById('chip-threshold').textContent  = `Shots under ${chipYds} yds (your threshold)`;
+
+  const totalPutts = rounds.reduce((s,r)=>s+(r.putts||[]).reduce((a,b)=>a+b,0),0);
+  const totalHoles = rounds.reduce((s,r)=>s+(r.scores||[]).length,0);
+
+  const pitchUD = calcUpDown(rounds, 'pitch');
+  const chipUD  = calcUpDown(rounds, 'chip');
+
+  document.getElementById('pitch-updown').textContent =
+    pitchUD.pct !== null ? pitchUD.pct + '%' : '—%';
+  document.getElementById('chip-updown').textContent =
+    chipUD.pct !== null ? chipUD.pct + '%' : '—%';
+
+  document.getElementById('pitch-count').textContent =
+    pitchUD.attempts > 0
+      ? `${pitchUD.successes} of ${pitchUD.attempts} attempts`
+      : 'No pitch data yet — enter shots during round entry';
+  document.getElementById('chip-count').textContent =
+    chipUD.attempts > 0
+      ? `${chipUD.successes} of ${chipUD.attempts} attempts`
+      : 'No chip data yet — enter shots during round entry';
+
+  document.getElementById('shortgame-cards').innerHTML = `
+    <div class="summary-card">
+      <div class="summary-label">Putts / Round</div>
+      <div class="summary-val">${rounds.length && totalHoles ? (totalPutts/rounds.length).toFixed(1) : '—'}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Putts / Hole</div>
+      <div class="summary-val">${totalHoles ? (totalPutts/totalHoles).toFixed(2) : '—'}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Total Putts</div>
+      <div class="summary-val">${totalPutts || '—'}</div>
+    </div>
+  `;
+}
+
+// ════════════════════════════════════════
+// JOURNAL
+// ════════════════════════════════════════
+function renderJournal(courseId) {
+  const rounds = state.rounds.filter(r=>r.courseId===courseId && r.journal && (r.journal.tee||r.journal.approach||r.journal.short||r.journal.notes)).sort((a,b)=>b.date.localeCompare(a.date));
+  const course = state.courses.find(c=>c.id===courseId);
+  const el = document.getElementById('journal-entries');
+  if (!rounds.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:2rem;"><div class="empty-icon" style="font-size:2rem;">📓</div><p class="empty-sub">No journal entries yet. Add one when you enter your next round.</p></div>';
+    return;
+  }
+  el.innerHTML = rounds.map(r => {
+    const total = r.scores.reduce((a,b)=>a+b,0);
+    const diff = total - course.par;
+    return `<div class="journal-entry-card">
+      <div class="journal-entry-header">
+        <div class="journal-entry-date">${formatDate(r.date)} · ${course.name}</div>
+        <div class="journal-entry-score">${total} (${diff>0?'+':''}${diff})</div>
+      </div>
+      <div class="journal-shots">
+        ${r.journal.tee ? `<div class="journal-shot"><div class="journal-shot-label">Best Tee Shot</div><div class="journal-shot-text">${r.journal.tee}</div></div>` : ''}
+        ${r.journal.approach ? `<div class="journal-shot"><div class="journal-shot-label">Best Approach</div><div class="journal-shot-text">${r.journal.approach}</div></div>` : ''}
+        ${r.journal.short ? `<div class="journal-shot"><div class="journal-shot-label">Best Short Game</div><div class="journal-shot-text">${r.journal.short}</div></div>` : ''}
+      </div>
+      ${r.journal.notes ? `<div class="journal-notes">${r.journal.notes}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════
+// ROUND ENTRY MODAL
+// ════════════════════════════════════════
+function populateRoundModal() {
+  const sel = document.getElementById('round-course');
+  sel.innerHTML = '<option value="">— Select course —</option>' + state.courses.map(c=>`<option value="${c.id}">${c.complexName ? c.complexName+' – ' : ''}${c.name}</option>`).join('');
+  document.getElementById('round-date').value = new Date().toISOString().split('T')[0];
+  if (state.activeCourseId) sel.value = state.activeCourseId;
+  onRoundCourseChange();
+}
+
+let currentPenaltyHole = null;
+let pendingPenalties = {};
+
+function onRoundCourseChange() {
+  const courseId = document.getElementById('round-course').value;
+  const course = state.courses.find(c=>c.id===courseId);
+  const wrap = document.getElementById('round-scorecard-wrap');
+  const jWrap = document.getElementById('round-journal-wrap');
+  if (!course) { wrap.style.display='none'; jWrap.style.display='none'; return; }
+  wrap.style.display=''; jWrap.style.display='';
+  pendingPenalties = {};
+  buildScorecard(course);
+}
+
+function buildScorecard(course) {
+  const body = document.getElementById('round-scorecard-body');
+  const foot = document.getElementById('round-scorecard-foot');
+  const nines = course.nines || ['Front','Back'];
+  let html = '';
+  course.holePars.forEach((par,i) => {
+    if (i===0) html += `<tr><td colspan="7" style="font-size:0.7rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--cream-dark);padding:0.3rem 0.5rem;">${nines[0]||'Front'} Nine</td></tr>`;
+    if (i===9 && course.holes===18) html += `<tr><td colspan="7" style="font-size:0.7rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--cream-dark);padding:0.3rem 0.5rem;">${nines[1]||'Back'} Nine</td></tr>`;
+    html += `<tr>
+      <td>Hole ${i+1} · Par ${par}</td>
+      <td></td>
+      <td><input class="score-input" type="number" id="sc-score-${i}" min="1" max="15" placeholder="${par}" oninput="updateScorecardTotal()"></td>
+      <td><input class="putt-input" type="number" id="sc-putts-${i}" min="0" max="6" placeholder="2"></td>
+      <td><button class="penalty-mini-btn" id="pen-btn-${i}" onclick="openPenaltyModal(${i})">+</button></td>
+      <td><input class="putt-input" type="number" id="sc-chips-${i}" min="0" max="5" placeholder="0"></td>
+      <td><input class="putt-input" type="number" id="sc-pitches-${i}" min="0" max="5" placeholder="0"></td>
+    </tr>`;
+  });
+  body.innerHTML = html;
+  foot.innerHTML = `<tr style="background:var(--cream);"><td style="font-weight:500;padding:0.5rem;font-size:0.82rem;">Total</td><td></td><td style="text-align:center;font-weight:500;font-size:1rem;color:var(--green-deep);" id="sc-total">—</td><td colspan="4"></td></tr>`;
+}
+
+function updateScorecardTotal() {
+  let sum = 0; let count = 0;
+  document.querySelectorAll('[id^="sc-score-"]').forEach(inp => {
+    const v = parseInt(inp.value);
+    if (!isNaN(v)) { sum+=v; count++; }
+  });
+  document.getElementById('sc-total').textContent = count ? sum : '—';
+}
+
+function openPenaltyModal(holeIdx) {
+  currentPenaltyHole = holeIdx;
+  document.getElementById('penalty-modal-title').textContent = `Penalty — Hole ${holeIdx+1}`;
+  document.querySelectorAll('.penalty-type-btn').forEach(b=>b.classList.remove('selected'));
+  openModal('penalty-modal');
+}
+
+function selectPenaltyField(btn, field) {
+  document.querySelectorAll(`.penalty-type-btn[data-field="${field}"]`).forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function savePenalty() {
+  const shotBtn = document.querySelector('.penalty-type-btn[data-field="shot"].selected');
+  const typeBtn = document.querySelector('.penalty-type-btn[data-field="type"].selected');
+  if (!shotBtn || !typeBtn) { alert('Please select a shot type and penalty type.'); return; }
+  if (typeBtn.dataset.val === 'remove') {
+    delete pendingPenalties[currentPenaltyHole];
+    const btn = document.getElementById(`pen-btn-${currentPenaltyHole}`);
+    if (btn) { btn.textContent='+'; btn.classList.remove('has-penalty'); }
+  } else {
+    pendingPenalties[currentPenaltyHole] = { hole:currentPenaltyHole+1, shot:shotBtn.dataset.val, type:typeBtn.dataset.val };
+    const btn = document.getElementById(`pen-btn-${currentPenaltyHole}`);
+    if (btn) { btn.textContent='⚑'; btn.classList.add('has-penalty'); }
+  }
+  closeModal('penalty-modal');
+}
+
+function saveRound() {
+  const courseId = document.getElementById('round-course').value;
+  const date = document.getElementById('round-date').value;
+  const course = state.courses.find(c=>c.id===courseId);
+  if (!course || !date) { alert('Please select a course and date.'); return; }
+  const scores = course.holePars.map((_,i)=>parseInt(document.getElementById(`sc-score-${i}`)?.value)||0);
+  if (scores.some(s=>s===0)) { if (!confirm('Some holes have no score entered. Save anyway?')) return; }
+  const putts = course.holePars.map((_,i)=>parseInt(document.getElementById(`sc-putts-${i}`)?.value)||0);
+  const chips = course.holePars.map((_,i)=>parseInt(document.getElementById(`sc-chips-${i}`)?.value)||0);
+  const pitches = course.holePars.map((_,i)=>parseInt(document.getElementById(`sc-pitches-${i}`)?.value)||0);
+  const penalties = Object.values(pendingPenalties);
+  const journal = {
+    tee: document.getElementById('j-tee')?.value||'',
+    approach: document.getElementById('j-approach')?.value||'',
+    short: document.getElementById('j-short')?.value||'',
+    notes: document.getElementById('j-notes')?.value||'',
+    share: document.getElementById('j-share')?.checked||false
+  };
+  state.rounds.push({ id:'r'+Date.now(), courseId, date, scores, putts, chips, pitches, penalties, journal });
+  saveState();
+  closeModal('enter-round-modal');
+  renderAll();
+}
+
+// ════════════════════════════════════════
+// ADD COURSE
+// ════════════════════════════════════════
+function toggleComplex() {
+  const on = document.getElementById('is-complex').checked;
+  document.getElementById('complex-fields').style.display = on ? '' : 'none';
+}
+
+function searchGHIN() {
+  const q = document.getElementById('ghin-search-input').value.trim();
+  if (!q) return;
+  document.getElementById('ghin-results').innerHTML = '<div style="font-size:0.82rem;color:var(--text-muted);padding:0.5rem 0;">GHIN search requires an active connection. Please connect your GHIN account in Settings, or add the course manually.</div>';
+}
+
+function saveCourse() {
+  const isManual = document.getElementById('modal-tab-manual').style.display !== 'none';
+  if (!isManual) { closeModal('add-course-modal'); return; }
+  const name = document.getElementById('course-name').value.trim();
+  const rating = parseFloat(document.getElementById('course-rating').value);
+  const slope = parseInt(document.getElementById('course-slope').value);
+  const par = parseInt(document.getElementById('course-par').value);
+  const holes = parseInt(document.getElementById('course-holes').value)||18;
+  const location = document.getElementById('course-location').value.trim();
+  if (!name) { alert('Please enter a course name.'); return; }
+  const isComplex = document.getElementById('is-complex').checked;
+  const course = {
+    id: 'c'+Date.now(), name, location, rating:rating||72, slope:slope||113, par:par||72, holes,
+    holePars: Array(holes).fill(4),
+    isComplex, complexName: isComplex ? document.getElementById('complex-name').value||name : null,
+    complexId: isComplex ? 'cx'+Date.now() : null,
+    nines: isComplex ? [document.getElementById('nine-a').value||'Front', document.getElementById('nine-b').value||'Back'] : ['Front','Back']
+  };
+  state.courses.push(course);
+  state.activeCourseId = course.id;
+  saveState();
+  closeModal('add-course-modal');
+  renderAll();
+}
+
+// ════════════════════════════════════════
+// SETTINGS
+// ════════════════════════════════════════
+function saveGHIN() {
+  state.settings.ghinNum = document.getElementById('modal-ghin-num')?.value || document.getElementById('setting-ghin-num')?.value || '';
+  state.settings.ghinLast = document.getElementById('modal-ghin-last')?.value || document.getElementById('setting-ghin-last')?.value || '';
+  state.settings.pitchYds = parseInt(document.getElementById('modal-pitch')?.value || document.getElementById('setting-pitch-yds')?.value) || 100;
+  state.settings.chipYds = parseInt(document.getElementById('modal-chip')?.value || document.getElementById('setting-chip-yds')?.value) || 25;
+  saveState();
+  updateGHINStatus();
+  closeModal('settings-modal');
+}
+
+function saveSettings() {
+  saveGHIN();
+}
+
+function updateGHINStatus() {
+  const dot = document.getElementById('ghin-dot');
+  const txt = document.getElementById('ghin-status-text');
+  if (state.settings.ghinNum) {
+    dot.classList.add('connected');
+    txt.textContent = `GHIN #${state.settings.ghinNum}`;
+  } else {
+    dot.classList.remove('connected');
+    txt.textContent = 'GHIN not connected';
+  }
+}
+
+// ════════════════════════════════════════
+// RENDER ALL
+// ════════════════════════════════════════
+function renderAll() {
+  renderSidebar();
+  updateGHINStatus();
+  const courseId = state.activeCourseId;
+  const hasCourse = !!courseId && state.courses.find(c=>c.id===courseId);
+  document.getElementById('empty-state').style.display = hasCourse ? 'none' : '';
+  document.getElementById('course-view').style.display = hasCourse ? '' : 'none';
+  if (!hasCourse) return;
+  renderSummaryCards(courseId);
+  renderStatsTable(courseId);
+  renderScorecardDisplay(courseId);
+  renderRoundsList(courseId);
+  renderHandicap(courseId);
+  renderPenalties(courseId);
+  renderShortGame(courseId);
+  renderJournal(courseId);
+}
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+loadState();
+loadSampleData();
+// Set today's date
+document.getElementById('round-date') && (document.getElementById('round-date').value = new Date().toISOString().split('T')[0]);
+renderAll();
+</script>
+</body>
+</html>

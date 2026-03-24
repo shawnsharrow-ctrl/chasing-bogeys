@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Affiliate Disclosure — Chasing Bogeys</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green-deep: #1a3a2a; --green-mid: #2d5a3d; --green-bright: #4a8c5c;
+    --green-light: #a8d5b5; --cream: #f5f0e8; --cream-dark: #e8e0d0;
+    --tan: #c9b99a; --gold: #c8952a; --gold-light: #e8b84b;
+    --white: #fefefe; --text-dark: #1a1a18; --text-mid: #3d3d38; --text-muted: #7a7a72;
+    --serif: 'Playfair Display', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+  }
+  body { font-family: var(--sans); background: var(--cream); color: var(--text-dark); }
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: var(--green-deep); display: flex; align-items: center;
+    justify-content: space-between; padding: 0 3rem; height: 64px;
+    border-bottom: 1px solid rgba(200,149,42,0.25);
+  }
+  .nav-logo { font-family: var(--serif); font-size: 1.25rem; color: var(--cream); text-decoration: none; }
+  .nav-logo em { color: var(--gold-light); font-style: italic; }
+  .nav-links { display: flex; gap: 2rem; list-style: none; }
+  .nav-links a { color: var(--cream-dark); text-decoration: none; font-size: 0.875rem; font-weight: 400; letter-spacing: 0.04em; text-transform: uppercase; }
+  .nav-links a:hover { color: var(--gold-light); }
+
+  .page-hero {
+    background: var(--green-deep); padding: 6rem 3rem 3rem; text-align: center;
+  }
+  .eyebrow { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.75rem; }
+  .page-title { font-family: var(--serif); font-size: 2.5rem; color: var(--cream); }
+
+  .content-wrap {
+    max-width: 720px; margin: 0 auto; padding: 4rem 1.5rem 6rem;
+  }
+
+  .prose h2 {
+    font-family: var(--serif); font-size: 1.4rem; color: var(--green-deep);
+    margin: 2.5rem 0 0.75rem;
+  }
+  .prose p {
+    font-size: 0.975rem; font-weight: 300; line-height: 1.8;
+    color: var(--text-mid); margin-bottom: 1.25rem;
+  }
+  .prose ul {
+    margin: 0 0 1.25rem 1.5rem;
+  }
+  .prose ul li {
+    font-size: 0.975rem; font-weight: 300; line-height: 1.8; color: var(--text-mid); margin-bottom: 0.4rem;
+  }
+  .prose a { color: var(--green-mid); }
+
+  .notice-box {
+    background: var(--white); border: 1px solid var(--cream-dark);
+    border-left: 4px solid var(--gold); border-radius: 6px;
+    padding: 1.25rem 1.5rem; margin-bottom: 2.5rem;
+  }
+  .notice-box p { margin: 0; font-size: 0.95rem; font-weight: 400; color: var(--text-mid); line-height: 1.7; }
+
+  .last-updated { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 2rem; }
+
+  footer {
+    background: var(--green-deep); padding: 2rem 3rem;
+    display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid rgba(200,149,42,0.2);
+  }
+  .footer-logo { font-family: var(--serif); font-size: 1rem; color: var(--cream); }
+  .footer-logo em { color: var(--gold-light); }
+  .footer-links { display: flex; gap: 1.5rem; }
+  .footer-links a { font-size: 0.8rem; color: var(--green-light); text-decoration: none; }
+  .footer-links a:hover { color: var(--cream); }
+
+  @media (max-width: 640px) {
+    nav { padding: 0 1.25rem; }
+    .nav-links { display: none; }
+    .page-hero { padding: 5.5rem 1.25rem 2rem; }
+    .content-wrap { padding: 2.5rem 1.25rem 4rem; }
+    footer { flex-direction: column; gap: 1rem; padding: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">Chasing <em>Bogeys</em></a>
+  <ul class="nav-links">
+    <li><a href="index.html#tools">Tools</a></li>
+    <li><a href="index.html#blog">Blog</a></li>
+    <li><a href="index.html#about">About</a></li>
+  </ul>
+</nav>
+
+<div class="page-hero">
+  <p class="eyebrow">Legal</p>
+  <h1 class="page-title" style="font-family:var(--serif); color:var(--cream);">Affiliate Disclosure</h1>
+</div>
+
+<div class="content-wrap">
+  <p class="last-updated">Last updated: July 2025</p>
+
+  <div class="notice-box">
+    <p><strong>The short version:</strong> Some links on Chasing Bogeys are affiliate links. If you click one and buy something, we may earn a small commission — at no extra cost to you. Our recommendations are never influenced by this.</p>
+  </div>
+
+  <div class="prose">
+    <h2>What is an affiliate link?</h2>
+    <p>An affiliate link is a specially tracked URL that tells a retailer (like Amazon) that you arrived from our site. If you make a purchase after clicking one of these links, we receive a small percentage of the sale as a commission. The price you pay is exactly the same whether you use our link or go directly to the retailer — you pay nothing extra.</p>
+
+    <h2>Which programs do we participate in?</h2>
+    <p>Chasing Bogeys is a participant in the Amazon Services LLC Associates Program, an affiliate advertising program designed to provide a means for sites to earn advertising fees by linking to Amazon.com. We may also participate in other affiliate programs for golf-related retailers and brands from time to time. Any page or tool containing affiliate links will clearly note this at the top.</p>
+
+    <h2>Does this influence our recommendations?</h2>
+    <p>No. This is the part we feel most strongly about. The What Ball? tool, for example, generates recommendations entirely from independent robot-test data published by MyGolfSpy. We do not rank balls higher because they earn us more commission, because a brand reached out, or for any reason other than how well they matched your stated preferences. If a ball earns us nothing — or isn't even available on Amazon — but it's genuinely the best match for your game, that's what you'll see.</p>
+    <p>The same principle applies to every blog post, product review, and tool on this site. We will always tell you when we have a financial relationship with a brand or product, and that relationship will never determine our opinion of it.</p>
+
+    <h2>FTC compliance</h2>
+    <p>This disclosure is made in accordance with the Federal Trade Commission's guidelines on endorsements and testimonials (16 CFR Part 255). The FTC requires that we clearly disclose any material connection between ourselves and the products we recommend. Affiliate commissions constitute such a connection, and we take this disclosure seriously.</p>
+
+    <h2>Where do affiliate links appear?</h2>
+    <p>Affiliate links may appear in:</p>
+    <ul>
+      <li>The What Ball? tool results page</li>
+      <li>Blog posts covering equipment and gear reviews</li>
+      <li>Any product recommendations within the site</li>
+    </ul>
+    <p>Pages or tools containing affiliate links will include a clear disclosure at the top of the page.</p>
+
+    <h2>Questions?</h2>
+    <p>If you have any questions about this disclosure or our affiliate relationships, feel free to reach out via the contact information on our About page.</p>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-logo">Chasing <em>Bogeys</em></div>
+  <div class="footer-links">
+    <a href="index.html">Home</a>
+    <a href="what-ball.html">What Ball?</a>
+    <a href="home-course-tracker.html">Course Tracker</a>
+    <a href="index.html#blog">Blog</a>
+  </div>
+</footer>
+
+</body>
+</html>

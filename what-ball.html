@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What Ball? — Chasing Bogeys</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green-deep:   #1a3a2a;
+    --green-mid:    #2d5a3d;
+    --green-bright: #4a8c5c;
+    --green-light:  #a8d5b5;
+    --cream:        #f5f0e8;
+    --cream-dark:   #e8e0d0;
+    --tan:          #c9b99a;
+    --gold:         #c8952a;
+    --gold-light:   #e8b84b;
+    --white:        #fefefe;
+    --text-dark:    #1a1a18;
+    --text-mid:     #3d3d38;
+    --text-muted:   #7a7a72;
+    --serif: 'Playfair Display', Georgia, serif;
+    --sans:  'DM Sans', system-ui, sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans);
+    background: var(--cream);
+    color: var(--text-dark);
+    min-height: 100vh;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: var(--green-deep);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 3rem; height: 64px;
+    border-bottom: 1px solid rgba(200,149,42,0.25);
+  }
+  .nav-logo { font-family: var(--serif); font-size: 1.25rem; color: var(--cream); text-decoration: none; }
+  .nav-logo em { color: var(--gold-light); font-style: italic; }
+  .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
+  .nav-links a { color: var(--cream-dark); text-decoration: none; font-size: 0.875rem; font-weight: 400; letter-spacing: 0.04em; text-transform: uppercase; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--gold-light); }
+  .nav-links a.active { color: var(--gold-light); }
+
+  /* ── HERO BAND ── */
+  .tool-hero {
+    background: var(--green-deep);
+    padding: 6rem 3rem 3rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .tool-hero::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at 60% 50%, var(--green-mid) 0%, transparent 70%);
+    opacity: 0.6;
+  }
+  .tool-hero-inner { position: relative; z-index: 1; }
+  .tool-eyebrow {
+    font-size: 0.72rem; font-weight: 500; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 0.75rem;
+  }
+  .tool-title {
+    font-family: var(--serif); font-size: clamp(2.5rem, 5vw, 3.5rem);
+    color: var(--cream); margin-bottom: 0.75rem;
+  }
+  .tool-title em { color: var(--gold-light); font-style: italic; }
+  .tool-subtitle {
+    font-size: 1rem; font-weight: 300; color: var(--green-light);
+    max-width: 520px; margin: 0 auto 1.5rem; line-height: 1.7;
+  }
+  .tool-meta {
+    display: inline-flex; align-items: center; gap: 1.5rem;
+    font-size: 0.78rem; color: var(--tan); letter-spacing: 0.04em;
+  }
+  .tool-meta span { display: flex; align-items: center; gap: 0.35rem; }
+
+  /* ── QUIZ WRAPPER ── */
+  .quiz-wrapper {
+    max-width: 720px; margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+  }
+
+  /* Progress */
+  .progress-bar-wrap {
+    background: var(--cream-dark); border-radius: 4px; height: 4px;
+    margin-bottom: 2.5rem; overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%; background: var(--gold); border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+  .progress-label {
+    font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.08em;
+    text-transform: uppercase; margin-bottom: 0.5rem;
+    display: flex; justify-content: space-between;
+  }
+
+  /* Step card */
+  .step-card {
+    background: var(--white); border: 1px solid var(--cream-dark);
+    border-radius: 10px; padding: 2.5rem;
+    animation: fadeSlide 0.3s ease;
+  }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .step-number {
+    font-size: 0.7rem; font-weight: 500; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 0.6rem;
+  }
+  .step-question {
+    font-family: var(--serif); font-size: 1.6rem; color: var(--green-deep);
+    margin-bottom: 0.6rem; line-height: 1.25;
+  }
+  .step-hint {
+    font-size: 0.88rem; font-weight: 300; color: var(--text-muted);
+    line-height: 1.65; margin-bottom: 2rem; max-width: 540px;
+  }
+
+  /* Option buttons */
+  .options-grid { display: grid; gap: 0.75rem; margin-bottom: 2rem; }
+  .options-grid.two-col { grid-template-columns: 1fr 1fr; }
+  .options-grid.three-col { grid-template-columns: repeat(3, 1fr); }
+
+  .option-btn {
+    background: var(--cream); border: 1.5px solid var(--cream-dark);
+    border-radius: 8px; padding: 1rem 1.25rem;
+    text-align: left; cursor: pointer; transition: all 0.18s;
+    display: flex; flex-direction: column; gap: 0.2rem;
+    font-family: var(--sans);
+  }
+  .option-btn:hover { border-color: var(--green-bright); background: var(--white); }
+  .option-btn.selected { border-color: var(--green-mid); background: var(--white); box-shadow: 0 0 0 3px rgba(45,90,61,0.12); }
+  .option-btn .opt-label { font-size: 0.95rem; font-weight: 500; color: var(--green-deep); }
+  .option-btn .opt-desc { font-size: 0.8rem; font-weight: 300; color: var(--text-muted); }
+
+  /* Select input */
+  .styled-select {
+    width: 100%; padding: 0.85rem 1rem; font-family: var(--sans);
+    font-size: 0.95rem; color: var(--text-dark);
+    background: var(--cream); border: 1.5px solid var(--cream-dark);
+    border-radius: 8px; cursor: pointer; margin-bottom: 1rem;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a7a72' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 1rem center;
+    transition: border-color 0.18s;
+  }
+  .styled-select:focus { outline: none; border-color: var(--green-mid); }
+
+  /* Current ball snapshot */
+  .ball-snapshot {
+    background: var(--cream); border: 1px solid var(--cream-dark);
+    border-radius: 8px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;
+    display: none;
+  }
+  .ball-snapshot.visible { display: block; }
+  .ball-snapshot-title {
+    font-size: 0.7rem; font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 0.75rem;
+  }
+  .ball-snapshot-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;
+  }
+  .snapshot-stat { text-align: center; }
+  .snapshot-val { font-size: 1.1rem; font-weight: 500; color: var(--green-deep); }
+  .snapshot-lbl { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem; }
+
+  .skip-link {
+    font-size: 0.82rem; color: var(--text-muted); cursor: pointer;
+    text-decoration: underline; text-underline-offset: 3px;
+    background: none; border: none; font-family: var(--sans);
+    transition: color 0.18s; margin-bottom: 1.5rem; display: inline-block;
+  }
+  .skip-link:hover { color: var(--green-mid); }
+
+  /* Step sub-options (feel sub-section, greenside sub-section) */
+  .sub-section { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--cream-dark); display: none; }
+  .sub-section.visible { display: block; }
+  .sub-label { font-size: 0.8rem; font-weight: 500; color: var(--text-mid); margin-bottom: 0.75rem; }
+
+  /* Checkbox options */
+  .checkbox-option {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.75rem 1rem; background: var(--cream);
+    border: 1.5px solid var(--cream-dark); border-radius: 8px;
+    cursor: pointer; margin-bottom: 0.5rem; transition: all 0.18s;
+  }
+  .checkbox-option:hover { border-color: var(--green-bright); }
+  .checkbox-option input { accent-color: var(--green-mid); width: 16px; height: 16px; cursor: pointer; }
+  .checkbox-option label { font-size: 0.9rem; color: var(--text-mid); cursor: pointer; }
+  .checkbox-option label strong { color: var(--green-deep); display: block; font-size: 0.92rem; }
+
+  /* Nav buttons */
+  .step-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; }
+  .btn-back {
+    background: none; border: 1px solid var(--cream-dark); color: var(--text-muted);
+    padding: 0.7rem 1.5rem; border-radius: 6px; cursor: pointer;
+    font-family: var(--sans); font-size: 0.88rem; transition: all 0.18s;
+  }
+  .btn-back:hover { border-color: var(--tan); color: var(--text-mid); }
+  .btn-next {
+    background: var(--green-deep); color: var(--cream);
+    border: none; padding: 0.85rem 2.5rem; border-radius: 6px;
+    cursor: pointer; font-family: var(--sans); font-size: 0.92rem;
+    font-weight: 500; transition: all 0.18s; letter-spacing: 0.02em;
+  }
+  .btn-next:hover { background: var(--green-mid); transform: translateY(-1px); }
+  .btn-next:disabled { background: var(--cream-dark); color: var(--text-muted); cursor: not-allowed; transform: none; }
+  .btn-find {
+    background: var(--gold); color: var(--green-deep);
+    border: none; padding: 0.85rem 2.5rem; border-radius: 6px;
+    cursor: pointer; font-family: var(--sans); font-size: 0.95rem;
+    font-weight: 500; transition: all 0.18s; letter-spacing: 0.02em;
+  }
+  .btn-find:hover { background: var(--gold-light); transform: translateY(-1px); }
+
+  /* ── RESULTS ── */
+  .results-section { display: none; }
+  .results-section.visible { display: block; }
+
+  .results-header {
+    text-align: center; margin-bottom: 2.5rem;
+  }
+  .results-header h2 {
+    font-family: var(--serif); font-size: 2rem; color: var(--green-deep); margin-bottom: 0.5rem;
+  }
+  .results-header p { font-size: 0.95rem; font-weight: 300; color: var(--text-muted); }
+
+  .results-grid { display: grid; gap: 1.25rem; margin-bottom: 2.5rem; }
+
+  .result-card {
+    background: var(--white); border: 1px solid var(--cream-dark);
+    border-radius: 10px; padding: 1.75rem;
+    display: grid; grid-template-columns: auto 1fr auto;
+    gap: 1.25rem; align-items: start;
+    transition: border-color 0.2s, transform 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .result-card::before {
+    content: ''; position: absolute; top: 0; left: 0; bottom: 0;
+    width: 4px; background: var(--green-mid);
+  }
+  .result-card.top-pick::before { background: var(--gold); }
+  .result-card:hover { border-color: var(--green-light); transform: translateY(-2px); }
+
+  .result-rank {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--cream); border: 1px solid var(--cream-dark);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-size: 1.1rem; color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .result-card.top-pick .result-rank {
+    background: var(--gold); border-color: var(--gold);
+    color: var(--green-deep); font-weight: 700;
+  }
+
+  .result-info { }
+  .result-badge {
+    display: inline-block; font-size: 0.62rem; font-weight: 500;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    background: var(--green-light); color: var(--green-deep);
+    padding: 0.2rem 0.6rem; border-radius: 3px; margin-bottom: 0.5rem;
+  }
+  .result-card.top-pick .result-badge { background: var(--gold-light); color: var(--green-deep); }
+  .result-name {
+    font-family: var(--serif); font-size: 1.2rem; color: var(--green-deep);
+    margin-bottom: 0.4rem;
+  }
+  .result-why { font-size: 0.85rem; font-weight: 300; color: var(--text-muted); line-height: 1.6; }
+
+  .result-action { display: flex; flex-direction: column; gap: 0.5rem; flex-shrink: 0; }
+  .btn-buy {
+    display: inline-block; background: var(--gold); color: var(--green-deep);
+    text-decoration: none; padding: 0.6rem 1.25rem; border-radius: 5px;
+    font-size: 0.82rem; font-weight: 500; text-align: center;
+    white-space: nowrap; transition: background 0.18s;
+  }
+  .btn-buy:hover { background: var(--gold-light); }
+  .btn-compare {
+    display: inline-block; background: none; border: 1px solid var(--cream-dark);
+    color: var(--text-muted); text-decoration: none; padding: 0.6rem 1.25rem;
+    border-radius: 5px; font-size: 0.82rem; text-align: center;
+    white-space: nowrap; transition: all 0.18s; cursor: pointer;
+    font-family: var(--sans);
+  }
+  .btn-compare:hover { border-color: var(--tan); color: var(--text-mid); }
+
+  .affiliate-disclosure {
+    background: var(--cream); border: 1px solid var(--cream-dark);
+    border-radius: 6px; padding: 0.85rem 1.25rem;
+    font-size: 0.78rem; color: var(--text-muted); line-height: 1.6;
+    margin-bottom: 2rem;
+  }
+  .affiliate-disclosure strong { color: var(--text-mid); }
+
+  .restart-wrap { text-align: center; margin-top: 1rem; }
+  .btn-restart {
+    background: none; border: 1px solid var(--cream-dark); color: var(--text-muted);
+    padding: 0.7rem 2rem; border-radius: 6px; cursor: pointer;
+    font-family: var(--sans); font-size: 0.88rem; transition: all 0.18s;
+  }
+  .btn-restart:hover { border-color: var(--green-mid); color: var(--green-mid); }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--green-deep); padding: 2rem 3rem;
+    display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid rgba(200,149,42,0.2);
+  }
+  .footer-logo { font-family: var(--serif); font-size: 1rem; color: var(--cream); }
+  .footer-logo em { color: var(--gold-light); }
+  .footer-links { display: flex; gap: 1.5rem; }
+  .footer-links a { font-size: 0.8rem; color: var(--green-light); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--cream); }
+
+  @media (max-width: 640px) {
+    nav { padding: 0 1.25rem; }
+    .nav-links { display: none; }
+    .tool-hero { padding: 5.5rem 1.25rem 2rem; }
+    .quiz-wrapper { padding: 2rem 1rem 4rem; }
+    .step-card { padding: 1.5rem; }
+    .options-grid.two-col, .options-grid.three-col { grid-template-columns: 1fr; }
+    .result-card { grid-template-columns: 1fr; }
+    .result-action { flex-direction: row; }
+    footer { flex-direction: column; gap: 1rem; padding: 1.5rem; text-align: center; }
+  }
+
+  /* ── RESULTS TIERS ── */
+  .results-tier { margin-bottom: 2rem; }
+  .tier-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.65rem 1rem; border-radius: 6px 6px 0 0;
+    margin-bottom: 0;
+  }
+  .tier-premium { background: var(--green-deep); }
+  .tier-budget  { background: var(--tan); }
+  .tier-label {
+    font-size: 0.72rem; font-weight: 500; letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .tier-premium .tier-label { color: var(--gold-light); }
+  .tier-budget  .tier-label { color: var(--green-deep); }
+  .tier-price {
+    font-size: 0.72rem; font-weight: 400;
+  }
+  .tier-premium .tier-price { color: var(--green-light); }
+  .tier-budget  .tier-price { color: var(--green-mid); }
+  .results-tier .result-card { border-radius: 0; border-top: none; }
+  .results-tier .result-card:last-child { border-radius: 0 0 8px 8px; }
+
+  /* ── BRAND FILTER ── */
+  .brand-filter-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.4rem; margin-top: 0.75rem;
+  }
+  .brand-filter-item {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.45rem 0.7rem; background: var(--cream);
+    border: 1.5px solid var(--cream-dark); border-radius: 6px;
+    cursor: pointer; transition: all 0.15s; font-size: 0.82rem;
+    color: var(--text-mid);
+  }
+  .brand-filter-item:has(input:checked) {
+    background: var(--red-light, #fde8e8); border-color: #c0392b;
+    color: #c0392b;
+  }
+  .brand-filter-item input { accent-color: #c0392b; width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+  .brand-filter-toggle {
+    font-size: 0.78rem; color: var(--green-mid); cursor: pointer;
+    text-decoration: underline; text-underline-offset: 3px;
+    background: none; border: none; font-family: var(--sans);
+    padding: 0; margin-top: 0.5rem; display: inline-block;
+  }
+  /* Fallback for browsers without :has() */
+  .brand-filter-item.excluded { background: #fde8e8; border-color: #c0392b; color: #c0392b; }
+
+  /* red-light fallback */
+  :root { --red-light: #fde8e8; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">Chasing <em>Bogeys</em></a>
+  <ul class="nav-links">
+    <li><a href="index.html#tools">Tools</a></li>
+    <li><a href="index.html#blog">Blog</a></li>
+    <li><a href="index.html#about">About</a></li>
+  </ul>
+</nav>
+
+<div class="tool-hero">
+  <div class="tool-hero-inner">
+    <p class="tool-eyebrow">Chasing Bogeys · Tool</p>
+    <h1 class="tool-title"><em>What Ball?</em></h1>
+    <p class="tool-subtitle">The question every golfer asks at some point. Answer 7 quick questions and we'll match you to the right ball from 37 robot-tested urethane models.</p>
+    <div class="tool-meta">
+      <span>37 balls tested</span>
+      <span>·</span>
+      <span>2025 MyGolfSpy data</span>
+      <span>·</span>
+      <span>Takes about 2 minutes</span>
+    </div>
+  </div>
+</div>
+
+<div class="quiz-wrapper">
+
+  <!-- QUIZ STEPS -->
+  <div id="quiz">
+    <div class="progress-label">
+      <span id="step-label">Step 1 of 7</span>
+      <span id="step-pct">14%</span>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-fill" style="width:14%"></div>
+    </div>
+
+    <!-- STEP 1: Swing Speed -->
+    <div class="step-card" id="step-1">
+      <div class="step-number">Step 1 of 7</div>
+      <h2 class="step-question">What's your driver swing speed?</h2>
+      <p class="step-hint">This is the single biggest factor in matching you to the right ball construction. If you're unsure, a rough estimate is fine — most casual golfers are in the middle range.</p>
+      <div class="options-grid three-col">
+        <button class="option-btn" data-step="1" data-val="fast" onclick="selectOption(this)">
+          <span class="opt-label">116+ mph</span>
+          <span class="opt-desc">Tour / scratch level</span>
+        </button>
+        <button class="option-btn" data-step="1" data-val="mid" onclick="selectOption(this)">
+          <span class="opt-label">95–115 mph</span>
+          <span class="opt-desc">Average to strong amateur</span>
+        </button>
+        <button class="option-btn" data-step="1" data-val="slow" onclick="selectOption(this)">
+          <span class="opt-label">Under 95 mph</span>
+          <span class="opt-desc">Senior / moderate swing</span>
+        </button>
+      </div>
+      <div class="step-nav">
+        <div></div>
+        <button class="btn-next" id="next-1" disabled onclick="nextStep(1)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Current Ball -->
+    <div class="step-card" id="step-2" style="display:none">
+      <div class="step-number">Step 2 of 7</div>
+      <h2 class="step-question">What ball do you currently play?</h2>
+      <p class="step-hint">This helps us use your current ball as a baseline. If you don't have a regular ball or it's not listed, select "My ball is not listed" and we'll use averages.</p>
+
+      <select class="styled-select" id="current-ball" onchange="onBallSelect()">
+        <option value="">— Select your ball —</option>
+        <option value="bridgestone_rx">Bridgestone TOUR B RX</option>
+        <option value="bridgestone_rxs">Bridgestone TOUR B RXS</option>
+        <option value="bridgestone_x">Bridgestone TOUR B X</option>
+        <option value="bridgestone_xs">Bridgestone TOUR B XS</option>
+        <option value="callaway_chrome_soft">Callaway Chrome Soft</option>
+        <option value="callaway_chrome_tour">Callaway Chrome Tour</option>
+        <option value="callaway_chrome_tour_td">Callaway Chrome Tour Triple Diamond</option>
+        <option value="callaway_chrome_tour_x">Callaway Chrome Tour X</option>
+        <option value="callaway_erc">Callaway ERC Soft</option>
+        <option value="kirkland">Kirkland Performance+ v3.5</option>
+        <option value="maxfli_tour">Maxfli Tour</option>
+        <option value="maxfli_tour_s">Maxfli Tour S</option>
+        <option value="maxfli_tour_x">Maxfli Tour X</option>
+        <option value="members_mark">Member's Mark Pro Series 2</option>
+        <option value="mizuno_pro_s">Mizuno Pro S</option>
+        <option value="mizuno_pro_x">Mizuno Pro X</option>
+        <option value="pxg_xtreme">PXG Xtreme Tour</option>
+        <option value="pxg_xtreme_x">PXG Xtreme Tour X</option>
+        <option value="srixon_qstar">Srixon Q-STAR TOUR</option>
+        <option value="srixon_zstar">Srixon Z-STAR</option>
+        <option value="srixon_zstar_diamond">Srixon Z-STAR DIAMOND</option>
+        <option value="srixon_zstar_divide">Srixon Z-STAR DIVIDE</option>
+        <option value="srixon_zstar_xv">Srixon Z-STAR XV</option>
+        <option value="taylormade_tp5">TaylorMade TP5</option>
+        <option value="taylormade_tp5x">TaylorMade TP5x</option>
+        <option value="taylormade_tour_response">TaylorMade Tour Response</option>
+        <option value="titleist_avx">Titleist AVX</option>
+        <option value="titleist_prov1">Titleist Pro V1</option>
+        <option value="titleist_prov1x">Titleist Pro V1x</option>
+        <option value="titleist_prov1x_ld">Titleist Pro V1x Left Dash</option>
+        <option value="titleist_tour_soft">Titleist Tour Soft</option>
+        <option value="vice_pro">Vice Pro</option>
+        <option value="vice_pro_air">Vice Pro Air</option>
+        <option value="vice_pro_plus">Vice Pro Plus</option>
+        <option value="wilson_model">Wilson Staff Model</option>
+        <option value="wilson_model_x">Wilson Staff Model X</option>
+        <option value="wilson_triad">Wilson Triad</option>
+        <option value="unlisted">My ball is not listed</option>
+      </select>
+
+      <div class="ball-snapshot" id="ball-snapshot">
+        <div class="ball-snapshot-title">Your current ball at a glance</div>
+        <div class="ball-snapshot-grid">
+          <div class="snapshot-stat">
+            <div class="snapshot-val" id="snap-launch">Mid</div>
+            <div class="snapshot-lbl">Launch</div>
+          </div>
+          <div class="snapshot-stat">
+            <div class="snapshot-val" id="snap-feel">Medium</div>
+            <div class="snapshot-lbl">Feel</div>
+          </div>
+          <div class="snapshot-stat">
+            <div class="snapshot-val" id="snap-spin">Mid</div>
+            <div class="snapshot-lbl">Greenside Spin</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="manual-ball-fields" style="display:none">
+        <p class="sub-label" style="margin-bottom:0.75rem;">Tell us about your ball's characteristics:</p>
+        <div style="margin-bottom:1rem;">
+          <p class="sub-label">Launch height</p>
+          <div class="options-grid three-col">
+            <button class="option-btn" data-step="2m" data-field="launch" data-val="low" onclick="selectSubOption(this,'launch')"><span class="opt-label">Low</span><span class="opt-desc">Piercing flight</span></button>
+            <button class="option-btn" data-step="2m" data-field="launch" data-val="mid" onclick="selectSubOption(this,'launch')"><span class="opt-label">Mid</span><span class="opt-desc">Balanced</span></button>
+            <button class="option-btn" data-step="2m" data-field="launch" data-val="high" onclick="selectSubOption(this,'launch')"><span class="opt-label">High</span><span class="opt-desc">Towering apex</span></button>
+          </div>
+        </div>
+        <div style="margin-bottom:1rem;">
+          <p class="sub-label">Feel</p>
+          <div class="options-grid three-col">
+            <button class="option-btn" data-step="2m" data-field="feel" data-val="soft" onclick="selectSubOption(this,'feel')"><span class="opt-label">Soft</span><span class="opt-desc">Buttery at impact</span></button>
+            <button class="option-btn" data-step="2m" data-field="feel" data-val="medium" onclick="selectSubOption(this,'feel')"><span class="opt-label">Medium</span><span class="opt-desc">Balanced</span></button>
+            <button class="option-btn" data-step="2m" data-field="feel" data-val="firm" onclick="selectSubOption(this,'feel')"><span class="opt-label">Firm</span><span class="opt-desc">Solid, clicky</span></button>
+          </div>
+        </div>
+        <div style="margin-bottom:1rem;">
+          <p class="sub-label">Greenside spin</p>
+          <div class="options-grid two-col">
+            <button class="option-btn" data-step="2m" data-field="spin" data-val="low" onclick="selectSubOption(this,'spin')"><span class="opt-label">Low</span><span class="opt-desc">Runs out</span></button>
+            <button class="option-btn" data-step="2m" data-field="spin" data-val="high" onclick="selectSubOption(this,'spin')"><span class="opt-label">High</span><span class="opt-desc">Checks up and bites</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-nav">
+        <button class="btn-back" onclick="prevStep(2)">← Back</button>
+        <button class="btn-next" id="next-2" disabled onclick="nextStep(2)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Launch Preference -->
+    <div class="step-card" id="step-3" style="display:none">
+      <div class="step-number">Step 3 of 7</div>
+      <h2 class="step-question">How would you like to change your launch?</h2>
+      <p class="step-hint"><strong>Higher launch</strong> maximizes carry and stopping power — ideal for most golfers, though more affected by wind. <strong>Lower launch</strong> performs better into the wind and maximizes roll-out.</p>
+      <div class="options-grid three-col">
+        <button class="option-btn" data-step="3" data-val="higher" onclick="selectOption(this)">
+          <span class="opt-label">Higher</span>
+          <span class="opt-desc">More carry & stopping power</span>
+        </button>
+        <button class="option-btn" data-step="3" data-val="similar" onclick="selectOption(this)">
+          <span class="opt-label">Similar</span>
+          <span class="opt-desc">Keep current trajectory</span>
+        </button>
+        <button class="option-btn" data-step="3" data-val="lower" onclick="selectOption(this)">
+          <span class="opt-label">Lower</span>
+          <span class="opt-desc">Wind performance & rollout</span>
+        </button>
+      </div>
+      <div class="step-nav">
+        <button class="btn-back" onclick="prevStep(3)">← Back</button>
+        <button class="btn-next" id="next-3" disabled onclick="nextStep(3)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: Spin Preference -->
+    <div class="step-card" id="step-4" style="display:none">
+      <div class="step-number">Step 4 of 7</div>
+      <h2 class="step-question">More spin, less spin, or similar?</h2>
+      <p class="step-hint"><strong>More spin</strong> increases workability and stopping power, tightens front-to-back dispersion — at the cost of some distance and potentially more side-to-side movement. <strong>Less spin</strong> can reduce shot shape and maximize carry. No ball can fix a hook or slice on its own.</p>
+      <div class="options-grid three-col">
+        <button class="option-btn" data-step="4" data-val="more" onclick="selectOption(this)">
+          <span class="opt-label">More spin</span>
+          <span class="opt-desc">Workability & stopping power</span>
+        </button>
+        <button class="option-btn" data-step="4" data-val="similar" onclick="selectOption(this)">
+          <span class="opt-label">Similar</span>
+          <span class="opt-desc">Keep current spin profile</span>
+        </button>
+        <button class="option-btn" data-step="4" data-val="less" onclick="selectOption(this)">
+          <span class="opt-label">Less spin</span>
+          <span class="opt-desc">Distance & straighter flight</span>
+        </button>
+      </div>
+      <div class="step-nav">
+        <button class="btn-back" onclick="prevStep(4)">← Back</button>
+        <button class="btn-next" id="next-4" disabled onclick="nextStep(4)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 5: Feel -->
+    <div class="step-card" id="step-5" style="display:none">
+      <div class="step-number">Step 5 of 7</div>
+      <h2 class="step-question">Is feel important to you?</h2>
+      <p class="step-hint">Softer balls are typically lower compression, which can trade some distance for a different feel at impact. Firmer balls tend to be higher-spinning models. Note: matching compression to swing speed is a common myth.</p>
+      <div class="options-grid two-col" style="margin-bottom:1rem;">
+        <button class="option-btn" data-step="5" data-val="skip" onclick="selectOption(this); hideFeelSub()">
+          <span class="opt-label">Not really</span>
+          <span class="opt-desc">Skip the feel filter</span>
+        </button>
+        <button class="option-btn" data-step="5" data-val="yes" onclick="selectOption(this); showFeelSub()">
+          <span class="opt-label">Yes, feel matters</span>
+          <span class="opt-desc">I'll specify my preference</span>
+        </button>
+      </div>
+      <div class="sub-section" id="feel-sub">
+        <p class="sub-label">Feel preference</p>
+        <div class="options-grid three-col">
+          <button class="option-btn" data-field="feel-pref" data-val="softer" onclick="selectSubOption(this,'feel-pref')"><span class="opt-label">Softer</span><span class="opt-desc">Lower compression</span></button>
+          <button class="option-btn" data-field="feel-pref" data-val="similar" onclick="selectSubOption(this,'feel-pref')"><span class="opt-label">Similar</span><span class="opt-desc">Keep current feel</span></button>
+          <button class="option-btn" data-field="feel-pref" data-val="firmer" onclick="selectSubOption(this,'feel-pref')"><span class="opt-label">Firmer</span><span class="opt-desc">Higher compression</span></button>
+        </div>
+      </div>
+      <div class="step-nav">
+        <button class="btn-back" onclick="prevStep(5)">← Back</button>
+        <button class="btn-next" id="next-5" disabled onclick="nextStep(5)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 6: Greenside -->
+    <div class="step-card" id="step-6" style="display:none">
+      <div class="step-number">Step 6 of 7</div>
+      <h2 class="step-question">How important is greenside performance?</h2>
+      <p class="step-hint">Prioritizing more greenside spin results in a ball that spins more throughout the bag — great for control, but can affect distance and dispersion off the tee.</p>
+      <div class="options-grid two-col" style="margin-bottom:1rem;">
+        <button class="option-btn" data-step="6" data-val="skip" onclick="selectOption(this); hideGreenSub()">
+          <span class="opt-label">Not a priority</span>
+          <span class="opt-desc">Distance & overall performance matter more</span>
+        </button>
+        <button class="option-btn" data-step="6" data-val="yes" onclick="selectOption(this); showGreenSub()">
+          <span class="opt-label">High priority</span>
+          <span class="opt-desc">I want greenside control</span>
+        </button>
+      </div>
+      <div class="sub-section" id="green-sub">
+        <p class="sub-label">Greenside spin preference</p>
+        <div class="options-grid two-col">
+          <button class="option-btn" data-field="green-pref" data-val="more" onclick="selectSubOption(this,'green-pref')"><span class="opt-label">More bite</span><span class="opt-desc">Check up and stop</span></button>
+          <button class="option-btn" data-field="green-pref" data-val="less" onclick="selectSubOption(this,'green-pref')"><span class="opt-label">More release</span><span class="opt-desc">Run out</span></button>
+        </div>
+      </div>
+      <div class="step-nav">
+        <button class="btn-back" onclick="prevStep(6)">← Back</button>
+        <button class="btn-next" id="next-6" disabled onclick="nextStep(6)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 7: Memberships -->
+    <div class="step-card" id="step-7" style="display:none">
+      <div class="step-number">Step 7 of 7</div>
+      <h2 class="step-question">Any of these memberships?</h2>
+      <p class="step-hint">A couple of the best-value balls in our dataset are only available through specific retailers. This unlocks them as potential recommendations.</p>
+      <label class="checkbox-option">
+        <input type="checkbox" id="costco" value="costco">
+        <label for="costco"><strong>Costco member</strong>Unlocks the Kirkland Performance+ v3.5</label>
+      </label>
+      <label class="checkbox-option">
+        <input type="checkbox" id="samsclub" value="samsclub">
+        <label for="samsclub"><strong>Sam's Club member</strong>Unlocks the Member's Mark Pro Series 2</label>
+      </label>
+
+      <div style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--cream-dark);">
+        <p class="sub-label" style="font-size:0.82rem;font-weight:500;color:var(--text-mid);margin-bottom:0.25rem;">Any brands to exclude?</p>
+        <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.5rem;">Check any brands you'd prefer not to see in your results.</p>
+        <button class="brand-filter-toggle" onclick="toggleBrandFilter(event)">Show brand filter ▾</button>
+        <div class="brand-filter-grid" id="brand-filter-grid" style="display:none;">
+          <label class="brand-filter-item"><input type="checkbox" class="brand-exclude-cb" value="Bridgestone"> Bridgestone</label>
+          <label class="brand-filter-item"><input type="checkbox" class="brand-exclude-cb" value="Callaway"> Callaway</label>
+          <label class="brand-filter-item"><input type="checkbox" class="brand-exclude-cb" value="Kirkland"> Kirkland</label>
+          <label class="brand-filter-item"><input type="checkbox" class="brand-exclude-cb" value="Maxfli"> Maxfli</label>
+          <label class="brand-filter-item"><input type="checkbox" class="brand-exclude-cb" value="Member's Mark"> Member's Mark</label>
+          <label class="brand-filter-item"><input type="checkbox" class="brand-exclude-cb" value="Mizuno"> Mizuno</label>
+          <label class="brand-filter-item"><input type="checkbox" class="brand-exclude-cb" value="PXG"> PXG</label>
+          <label class="brand-filter-item"><input type="checkbox" class="brand-exclude-cb" value="Srixon"> Srixon</label>
+          <label class="brand-filter-item"><input type="checkbox" class="brand-exclude-cb" value="TaylorMade"> TaylorMade</label>
+          <label class="brand-filter-item"><input type="checkbox" class="brand-exclude-cb" value="Titleist"> Titleist</label>
+          <label class="brand-filter-item"><input type="checkbox" class="brand-exclude-cb" value="Vice"> Vice</label>
+          <label class="brand-filter-item"><input type="checkbox" class="brand-exclude-cb" value="Wilson"> Wilson</label>
+        </div>
+      </div>
+      <div class="step-nav">
+        <button class="btn-back" onclick="prevStep(7)">← Back</button>
+        <button class="btn-find" onclick="findBall()">Find My Ball 🎯</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results-section" id="results">
+    <div class="results-header">
+      <h2>Your Ball Recommendations</h2>
+      <p>Based on your answers, here are the best matches from 37 robot-tested urethane balls.</p>
+    </div>
+
+    <div class="affiliate-disclosure">
+      <strong>Disclosure:</strong> Some links below are affiliate links. If you purchase through them, Chasing Bogeys earns a small commission at no extra cost to you. This never influences our recommendations — these are based purely on independent robot-test data from MyGolfSpy.
+    </div>
+
+    <div class="results-grid" id="results-grid">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="restart-wrap">
+      <button class="btn-restart" onclick="restartQuiz()">↺ Start Over</button>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-logo">Chasing <em>Bogeys</em></div>
+  <div class="footer-links">
+    <a href="index.html">Home</a>
+    <a href="home-course-tracker.html">Course Tracker</a>
+    <a href="index.html#blog">Blog</a>
+    <a href="affiliate-disclosure.html">Affiliate Disclosure</a>
+  </div>
+</footer>
+
+<script>
+// ── STATE ──
+const answers = {
+  swingSpeed: null,
+  currentBall: null,
+  currentBallData: null,
+  launchPref: null,
+  spinPref: null,
+  feelImportant: null,
+  feelPref: null,
+  greensideImportant: null,
+  greensidePref: null,
+  costco: false,
+  samsclub: false
+};
+
+const subAnswers = {
+  launch: null,
+  feel: null,
+  spin: null,
+  'feel-pref': null,
+  'green-pref': null
+};
+
+let currentStep = 1;
+const totalSteps = 7;
+
+// ── BALL DATA ──
+// Source: MyGolfSpy 2025 robot test, 37 urethane balls
+// Scores: 1=low, 2=mid, 3=high per dimension within each speed tier
+// launch = driver launch angle tier
+// driver_spin = driver spin tier (lower = less spin off tee)
+// wedge_spin = wedge spin tier (higher = more greenside bite)
+// iron_spin = iron spin tier (higher = more workability / stopping power)
+// feel = 1 soft, 2 medium, 3 firm (based on known compression profiles)
+
+// Ball data from MyGolfSpy 2025 robot test — 37 urethane balls
+// Scores: 1=low, 2=mid, 3=high across each dimension
+const BALL_DATA = {
+  "bridgestone_tour_b_rx": {
+    name: "Bridgestone TOUR B RX",
+    feel: 1,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CW1KQTQH",
+    fast: {launch:3,driver_spin:2,wedge_spin:1,iron_spin:2,carry:167.8,raw_launch:30.55,raw_driver_spin:2680},
+    mid:  {launch:1,driver_spin:1,wedge_spin:1,iron_spin:2,carry:146.5,raw_launch:28.34,raw_driver_spin:2217},
+    slow: {launch:3,driver_spin:1,wedge_spin:1,iron_spin:2,carry:122.6,raw_launch:29.59,raw_driver_spin:2899},
+  },
+  "bridgestone_tour_b_rxs": {
+    name: "Bridgestone TOUR B RXS",
+    feel: 1,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CW1KQTQH",
+    fast: {launch:1,driver_spin:1,wedge_spin:2,iron_spin:2,carry:165.3,raw_launch:26.48,raw_driver_spin:2486},
+    mid:  {launch:1,driver_spin:1,wedge_spin:2,iron_spin:2,carry:149.1,raw_launch:28.56,raw_driver_spin:2301},
+    slow: {launch:1,driver_spin:1,wedge_spin:2,iron_spin:2,carry:123.3,raw_launch:28.19,raw_driver_spin:3000},
+  },
+  "bridgestone_tour_b_x": {
+    name: "Bridgestone TOUR B X",
+    feel: 3,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CW1Q6W1Q",
+    fast: {launch:2,driver_spin:2,wedge_spin:3,iron_spin:1,carry:164.9,raw_launch:29.58,raw_driver_spin:2633},
+    mid:  {launch:3,driver_spin:3,wedge_spin:3,iron_spin:1,carry:149.2,raw_launch:30.12,raw_driver_spin:2510},
+    slow: {launch:2,driver_spin:3,wedge_spin:3,iron_spin:1,carry:123.9,raw_launch:29.3,raw_driver_spin:3237},
+  },
+  "bridgestone_tour_b_xs": {
+    name: "Bridgestone TOUR B XS",
+    feel: 2,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CW1Q6W1Q",
+    fast: {launch:2,driver_spin:3,wedge_spin:3,iron_spin:1,carry:165.6,raw_launch:29.7,raw_driver_spin:2844},
+    mid:  {launch:2,driver_spin:1,wedge_spin:3,iron_spin:1,carry:149.9,raw_launch:29.61,raw_driver_spin:2335},
+    slow: {launch:3,driver_spin:2,wedge_spin:3,iron_spin:1,carry:124.0,raw_launch:29.58,raw_driver_spin:3227},
+  },
+  "callaway_chrome_soft": {
+    name: "Callaway Chrome Soft",
+    feel: 1,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CXM8WFVS",
+    fast: {launch:3,driver_spin:3,wedge_spin:2,iron_spin:2,carry:166.5,raw_launch:29.81,raw_driver_spin:2892},
+    mid:  {launch:1,driver_spin:1,wedge_spin:2,iron_spin:2,carry:146.7,raw_launch:26.82,raw_driver_spin:2144},
+    slow: {launch:3,driver_spin:3,wedge_spin:2,iron_spin:2,carry:123.7,raw_launch:29.88,raw_driver_spin:3285},
+  },
+  "callaway_chrome_tour": {
+    name: "Callaway Chrome Tour",
+    feel: 2,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CXM8WFVS",
+    fast: {launch:3,driver_spin:3,wedge_spin:3,iron_spin:1,carry:168.0,raw_launch:31.53,raw_driver_spin:2873},
+    mid:  {launch:3,driver_spin:3,wedge_spin:3,iron_spin:1,carry:149.2,raw_launch:31.12,raw_driver_spin:2629},
+    slow: {launch:1,driver_spin:1,wedge_spin:3,iron_spin:1,carry:122.8,raw_launch:28.3,raw_driver_spin:2773},
+  },
+  "callaway_chrome_tour_triple_diamond": {
+    name: "Callaway Chrome Tour Triple Diamond",
+    feel: 3,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CXM8WFVS",
+    fast: {launch:1,driver_spin:1,wedge_spin:1,iron_spin:1,carry:166.1,raw_launch:27.66,raw_driver_spin:2390},
+    mid:  {launch:2,driver_spin:2,wedge_spin:1,iron_spin:1,carry:149.7,raw_launch:29.78,raw_driver_spin:2422},
+    slow: {launch:1,driver_spin:2,wedge_spin:1,iron_spin:1,carry:123.3,raw_launch:28.72,raw_driver_spin:3040},
+  },
+  "callaway_chrome_tour_x": {
+    name: "Callaway Chrome Tour X",
+    feel: 3,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CXM8WFVS",
+    fast: {launch:1,driver_spin:2,wedge_spin:2,iron_spin:2,carry:167.0,raw_launch:27.69,raw_driver_spin:2587},
+    mid:  {launch:3,driver_spin:3,wedge_spin:2,iron_spin:2,carry:148.5,raw_launch:30.62,raw_driver_spin:2505},
+    slow: {launch:2,driver_spin:3,wedge_spin:2,iron_spin:2,carry:123.6,raw_launch:29.48,raw_driver_spin:3319},
+  },
+  "callaway_erc_soft": {
+    name: "Callaway ERC Soft",
+    feel: 1,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B09L6FWFPW",
+    fast: {launch:1,driver_spin:2,wedge_spin:1,iron_spin:3,carry:165.9,raw_launch:27.71,raw_driver_spin:2708},
+    mid:  {launch:1,driver_spin:1,wedge_spin:1,iron_spin:3,carry:148.4,raw_launch:26.99,raw_driver_spin:2300},
+    slow: {launch:3,driver_spin:1,wedge_spin:1,iron_spin:3,carry:123.9,raw_launch:30.31,raw_driver_spin:2995},
+  },
+  "kirkland_performanceplus_v35": {
+    name: "Kirkland Performance+ v3.5",
+    feel: 2,
+    costcoOnly: true,
+    samsOnly: false,
+    amazon: "B0C7JLPQXN",
+    fast: {launch:2,driver_spin:2,wedge_spin:1,iron_spin:3,carry:167.7,raw_launch:29.48,raw_driver_spin:2669},
+    mid:  {launch:2,driver_spin:2,wedge_spin:1,iron_spin:3,carry:148.9,raw_launch:29.69,raw_driver_spin:2438},
+    slow: {launch:2,driver_spin:1,wedge_spin:1,iron_spin:3,carry:123.1,raw_launch:29.25,raw_driver_spin:2770},
+  },
+  "maxfli_tour": {
+    name: "Maxfli Tour",
+    feel: 2,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B09XQXTHKF",
+    fast: {launch:3,driver_spin:3,wedge_spin:3,iron_spin:3,carry:167.0,raw_launch:31.25,raw_driver_spin:2958},
+    mid:  {launch:2,driver_spin:3,wedge_spin:3,iron_spin:3,carry:149.2,raw_launch:30.06,raw_driver_spin:2636},
+    slow: {launch:3,driver_spin:2,wedge_spin:3,iron_spin:3,carry:124.0,raw_launch:29.76,raw_driver_spin:3209},
+  },
+  "maxfli_tour_s": {
+    name: "Maxfli Tour S",
+    feel: 1,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B09XQXTHKF",
+    fast: {launch:1,driver_spin:2,wedge_spin:2,iron_spin:1,carry:168.0,raw_launch:28.04,raw_driver_spin:2698},
+    mid:  {launch:1,driver_spin:2,wedge_spin:2,iron_spin:1,carry:148.3,raw_launch:27.9,raw_driver_spin:2426},
+    slow: {launch:3,driver_spin:3,wedge_spin:2,iron_spin:1,carry:123.5,raw_launch:30.45,raw_driver_spin:3254},
+  },
+  "maxfli_tour_x": {
+    name: "Maxfli Tour X",
+    feel: 3,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B09XQXTHKF",
+    fast: {launch:3,driver_spin:2,wedge_spin:3,iron_spin:1,carry:163.9,raw_launch:29.81,raw_driver_spin:2627},
+    mid:  {launch:3,driver_spin:2,wedge_spin:3,iron_spin:1,carry:147.7,raw_launch:30.13,raw_driver_spin:2415},
+    slow: {launch:2,driver_spin:3,wedge_spin:3,iron_spin:1,carry:123.2,raw_launch:29.49,raw_driver_spin:3313},
+  },
+  "members_mark_pro_series_2": {
+    name: "Member's Mark Pro Series 2",
+    feel: 2,
+    costcoOnly: false,
+    samsOnly: true,
+    amazon: "B0BZXQ7FP2",
+    fast: {launch:2,driver_spin:1,wedge_spin:1,iron_spin:3,carry:164.6,raw_launch:28.68,raw_driver_spin:2407},
+    mid:  {launch:2,driver_spin:2,wedge_spin:1,iron_spin:3,carry:149.8,raw_launch:29.06,raw_driver_spin:2460},
+    slow: {launch:2,driver_spin:3,wedge_spin:1,iron_spin:3,carry:123.4,raw_launch:28.93,raw_driver_spin:3238},
+  },
+  "mizuno_pro_s": {
+    name: "Mizuno Pro S",
+    feel: 1,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CG2P3TGH",
+    fast: {launch:1,driver_spin:1,wedge_spin:1,iron_spin:1,carry:162.4,raw_launch:27.64,raw_driver_spin:2345},
+    mid:  {launch:3,driver_spin:1,wedge_spin:1,iron_spin:1,carry:149.2,raw_launch:30.42,raw_driver_spin:2343},
+    slow: {launch:1,driver_spin:2,wedge_spin:1,iron_spin:1,carry:122.8,raw_launch:28.66,raw_driver_spin:3025},
+  },
+  "mizuno_pro_x": {
+    name: "Mizuno Pro X",
+    feel: 3,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CG2P3TGH",
+    fast: {launch:1,driver_spin:1,wedge_spin:1,iron_spin:3,carry:164.8,raw_launch:27.7,raw_driver_spin:2457},
+    mid:  {launch:1,driver_spin:1,wedge_spin:1,iron_spin:3,carry:146.9,raw_launch:26.5,raw_driver_spin:1975},
+    slow: {launch:1,driver_spin:2,wedge_spin:1,iron_spin:3,carry:123.4,raw_launch:27.69,raw_driver_spin:3130},
+  },
+  "pxg_xtreme_tour": {
+    name: "PXG Xtreme Tour",
+    feel: 2,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CG2FDVKQ",
+    fast: {launch:1,driver_spin:3,wedge_spin:1,iron_spin:2,carry:167.7,raw_launch:28.16,raw_driver_spin:2834},
+    mid:  {launch:3,driver_spin:1,wedge_spin:1,iron_spin:2,carry:150.5,raw_launch:30.41,raw_driver_spin:2411},
+    slow: {launch:2,driver_spin:1,wedge_spin:1,iron_spin:2,carry:123.8,raw_launch:28.91,raw_driver_spin:3010},
+  },
+  "pxg_xtreme_tour_x": {
+    name: "PXG Xtreme Tour X",
+    feel: 3,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CG2FDVKQ",
+    fast: {launch:3,driver_spin:2,wedge_spin:1,iron_spin:2,carry:166.5,raw_launch:30.19,raw_driver_spin:2658},
+    mid:  {launch:3,driver_spin:3,wedge_spin:1,iron_spin:2,carry:149.3,raw_launch:31.14,raw_driver_spin:2531},
+    slow: {launch:3,driver_spin:3,wedge_spin:1,iron_spin:2,carry:123.5,raw_launch:30.26,raw_driver_spin:3291},
+  },
+  "srixon_q-star_tour": {
+    name: "Srixon Q-STAR TOUR",
+    feel: 2,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CM8XRNTB",
+    fast: {launch:2,driver_spin:1,wedge_spin:3,iron_spin:2,carry:168.2,raw_launch:29.58,raw_driver_spin:2565},
+    mid:  {launch:2,driver_spin:1,wedge_spin:3,iron_spin:2,carry:150.4,raw_launch:29.92,raw_driver_spin:2406},
+    slow: {launch:2,driver_spin:2,wedge_spin:3,iron_spin:2,carry:123.1,raw_launch:29.49,raw_driver_spin:3170},
+  },
+  "srixon_z-star": {
+    name: "Srixon Z-STAR",
+    feel: 2,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CM8XRNTB",
+    fast: {launch:1,driver_spin:1,wedge_spin:3,iron_spin:1,carry:163.8,raw_launch:28.57,raw_driver_spin:2549},
+    mid:  {launch:2,driver_spin:2,wedge_spin:3,iron_spin:1,carry:149.5,raw_launch:29.23,raw_driver_spin:2429},
+    slow: {launch:2,driver_spin:3,wedge_spin:3,iron_spin:1,carry:124.3,raw_launch:29.19,raw_driver_spin:3298},
+  },
+  "srixon_z-star_diamond": {
+    name: "Srixon Z-STAR DIAMOND",
+    feel: 2,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CM8XRNTB",
+    fast: {launch:2,driver_spin:2,wedge_spin:2,iron_spin:1,carry:166.3,raw_launch:28.91,raw_driver_spin:2676},
+    mid:  {launch:3,driver_spin:3,wedge_spin:2,iron_spin:1,carry:149.7,raw_launch:30.21,raw_driver_spin:2619},
+    slow: {launch:3,driver_spin:3,wedge_spin:2,iron_spin:1,carry:124.0,raw_launch:29.67,raw_driver_spin:3486},
+  },
+  "srixon_z-star_divide": {
+    name: "Srixon Z-STAR DIVIDE",
+    feel: 2,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CM8XRNTB",
+    fast: {launch:2,driver_spin:1,wedge_spin:3,iron_spin:3,carry:167.9,raw_launch:28.58,raw_driver_spin:2572},
+    mid:  {launch:2,driver_spin:3,wedge_spin:3,iron_spin:3,carry:150.0,raw_launch:29.02,raw_driver_spin:2601},
+    slow: {launch:1,driver_spin:1,wedge_spin:3,iron_spin:3,carry:122.5,raw_launch:28.86,raw_driver_spin:2862},
+  },
+  "srixon_z-star_xv": {
+    name: "Srixon Z-STAR XV",
+    feel: 3,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CM8XRNTB",
+    fast: {launch:2,driver_spin:1,wedge_spin:3,iron_spin:2,carry:163.7,raw_launch:29.05,raw_driver_spin:2541},
+    mid:  {launch:2,driver_spin:3,wedge_spin:3,iron_spin:2,carry:149.4,raw_launch:29.89,raw_driver_spin:2687},
+    slow: {launch:2,driver_spin:1,wedge_spin:3,iron_spin:2,carry:123.1,raw_launch:28.94,raw_driver_spin:2939},
+  },
+  "taylormade_tp5": {
+    name: "TaylorMade TP5",
+    feel: 2,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CXN5W34K",
+    fast: {launch:2,driver_spin:1,wedge_spin:1,iron_spin:3,carry:166.6,raw_launch:28.7,raw_driver_spin:2442},
+    mid:  {launch:2,driver_spin:1,wedge_spin:1,iron_spin:3,carry:149.4,raw_launch:29.04,raw_driver_spin:2281},
+    slow: {launch:2,driver_spin:2,wedge_spin:1,iron_spin:3,carry:123.1,raw_launch:28.87,raw_driver_spin:3068},
+  },
+  "taylormade_tp5x": {
+    name: "TaylorMade TP5x",
+    feel: 3,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CXN5W34K",
+    fast: {launch:2,driver_spin:3,wedge_spin:3,iron_spin:1,carry:167.1,raw_launch:29.47,raw_driver_spin:2735},
+    mid:  {launch:2,driver_spin:2,wedge_spin:3,iron_spin:1,carry:149.3,raw_launch:29.31,raw_driver_spin:2492},
+    slow: {launch:2,driver_spin:2,wedge_spin:3,iron_spin:1,carry:124.1,raw_launch:28.91,raw_driver_spin:3050},
+  },
+  "taylormade_tour_response": {
+    name: "TaylorMade Tour Response",
+    feel: 2,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CXN5W34K",
+    fast: {launch:3,driver_spin:3,wedge_spin:1,iron_spin:3,carry:167.0,raw_launch:31.54,raw_driver_spin:2791},
+    mid:  {launch:1,driver_spin:1,wedge_spin:1,iron_spin:3,carry:148.3,raw_launch:28.14,raw_driver_spin:2262},
+    slow: {launch:3,driver_spin:1,wedge_spin:1,iron_spin:3,carry:123.4,raw_launch:29.8,raw_driver_spin:3013},
+  },
+  "titleist_avx": {
+    name: "Titleist AVX",
+    feel: 1,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CG3RPNTD",
+    fast: {launch:1,driver_spin:1,wedge_spin:1,iron_spin:3,carry:165.6,raw_launch:27.97,raw_driver_spin:2392},
+    mid:  {launch:1,driver_spin:1,wedge_spin:1,iron_spin:3,carry:147.4,raw_launch:28.06,raw_driver_spin:2351},
+    slow: {launch:1,driver_spin:2,wedge_spin:1,iron_spin:3,carry:123.9,raw_launch:28.73,raw_driver_spin:3125},
+  },
+  "titleist_pro_v1": {
+    name: "Titleist Pro V1",
+    feel: 2,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CG3RPNTD",
+    fast: {launch:1,driver_spin:1,wedge_spin:2,iron_spin:2,carry:165.0,raw_launch:27.47,raw_driver_spin:2453},
+    mid:  {launch:3,driver_spin:2,wedge_spin:2,iron_spin:2,carry:149.6,raw_launch:31.81,raw_driver_spin:2495},
+    slow: {launch:1,driver_spin:2,wedge_spin:2,iron_spin:2,carry:123.4,raw_launch:27.72,raw_driver_spin:3034},
+  },
+  "titleist_pro_v1x": {
+    name: "Titleist Pro V1x",
+    feel: 3,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CG3RPNTD",
+    fast: {launch:2,driver_spin:2,wedge_spin:3,iron_spin:3,carry:165.3,raw_launch:29.19,raw_driver_spin:2673},
+    mid:  {launch:3,driver_spin:3,wedge_spin:3,iron_spin:3,carry:150.3,raw_launch:30.98,raw_driver_spin:2686},
+    slow: {launch:3,driver_spin:2,wedge_spin:3,iron_spin:3,carry:123.5,raw_launch:29.96,raw_driver_spin:3110},
+  },
+  "titleist_pro_v1x_left_dash": {
+    name: "Titleist Pro V1x Left Dash",
+    feel: 3,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CG3RPNTD",
+    fast: {launch:3,driver_spin:3,wedge_spin:3,iron_spin:3,carry:166.0,raw_launch:32.1,raw_driver_spin:2737},
+    mid:  {launch:3,driver_spin:3,wedge_spin:3,iron_spin:3,carry:148.7,raw_launch:30.43,raw_driver_spin:2671},
+    slow: {launch:1,driver_spin:2,wedge_spin:3,iron_spin:3,carry:124.0,raw_launch:28.17,raw_driver_spin:3143},
+  },
+  "titleist_tour_soft": {
+    name: "Titleist Tour Soft",
+    feel: 1,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CG3RPNTD",
+    fast: {launch:3,driver_spin:1,wedge_spin:2,iron_spin:3,carry:166.3,raw_launch:30.21,raw_driver_spin:2524},
+    mid:  {launch:3,driver_spin:3,wedge_spin:2,iron_spin:3,carry:148.9,raw_launch:31.22,raw_driver_spin:2643},
+    slow: {launch:3,driver_spin:3,wedge_spin:2,iron_spin:3,carry:123.6,raw_launch:29.68,raw_driver_spin:3333},
+  },
+  "vice_pro": {
+    name: "Vice Pro",
+    feel: 2,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CG2MMXKV",
+    fast: {launch:3,driver_spin:3,wedge_spin:2,iron_spin:2,carry:166.4,raw_launch:30.96,raw_driver_spin:2786},
+    mid:  {launch:2,driver_spin:3,wedge_spin:2,iron_spin:2,carry:149.9,raw_launch:29.53,raw_driver_spin:2777},
+    slow: {launch:3,driver_spin:3,wedge_spin:2,iron_spin:2,carry:123.4,raw_launch:30.5,raw_driver_spin:3316},
+  },
+  "vice_pro_air": {
+    name: "Vice Pro Air",
+    feel: 1,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CG2MMXKV",
+    fast: {launch:3,driver_spin:3,wedge_spin:1,iron_spin:3,carry:167.3,raw_launch:30.71,raw_driver_spin:2766},
+    mid:  {launch:1,driver_spin:2,wedge_spin:1,iron_spin:3,carry:149.1,raw_launch:28.27,raw_driver_spin:2462},
+    slow: {launch:1,driver_spin:1,wedge_spin:1,iron_spin:3,carry:123.4,raw_launch:27.31,raw_driver_spin:2915},
+  },
+  "vice_pro_plus": {
+    name: "Vice Pro Plus",
+    feel: 2,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CG2MMXKV",
+    fast: {launch:2,driver_spin:2,wedge_spin:2,iron_spin:1,carry:165.6,raw_launch:28.96,raw_driver_spin:2684},
+    mid:  {launch:2,driver_spin:2,wedge_spin:2,iron_spin:1,carry:149.9,raw_launch:29.25,raw_driver_spin:2463},
+    slow: {launch:2,driver_spin:1,wedge_spin:2,iron_spin:1,carry:123.1,raw_launch:28.89,raw_driver_spin:2862},
+  },
+  "wilson_staff_model": {
+    name: "Wilson Staff Model",
+    feel: 2,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CGXPZMZB",
+    fast: {launch:2,driver_spin:2,wedge_spin:3,iron_spin:3,carry:165.0,raw_launch:29.17,raw_driver_spin:2711},
+    mid:  {launch:3,driver_spin:2,wedge_spin:3,iron_spin:3,carry:149.9,raw_launch:30.08,raw_driver_spin:2438},
+    slow: {launch:3,driver_spin:2,wedge_spin:3,iron_spin:3,carry:124.0,raw_launch:29.57,raw_driver_spin:3209},
+  },
+  "wilson_staff_model_x": {
+    name: "Wilson Staff Model X",
+    feel: 3,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CGXPZMZB",
+    fast: {launch:2,driver_spin:3,wedge_spin:2,iron_spin:1,carry:166.4,raw_launch:28.68,raw_driver_spin:2727},
+    mid:  {launch:2,driver_spin:3,wedge_spin:2,iron_spin:1,carry:149.8,raw_launch:29.45,raw_driver_spin:2564},
+    slow: {launch:3,driver_spin:3,wedge_spin:2,iron_spin:1,carry:123.2,raw_launch:29.83,raw_driver_spin:3266},
+  },
+  "wilson_triad": {
+    name: "Wilson Triad",
+    feel: 2,
+    costcoOnly: false,
+    samsOnly: false,
+    amazon: "B0CGXPZMZB",
+    fast: {launch:3,driver_spin:3,wedge_spin:2,iron_spin:1,carry:167.3,raw_launch:30.66,raw_driver_spin:2749},
+    mid:  {launch:1,driver_spin:1,wedge_spin:2,iron_spin:1,carry:148.3,raw_launch:28.4,raw_driver_spin:2301},
+    slow: {launch:1,driver_spin:1,wedge_spin:2,iron_spin:1,carry:124.0,raw_launch:28.32,raw_driver_spin:2948},
+  },
+};
+
+// Map old-style select values to BALL_DATA keys
+const BALL_KEY_MAP = {
+  bridgestone_rx: "bridgestone_tour_b_rx",
+  bridgestone_rxs: "bridgestone_tour_b_rxs",
+  bridgestone_x: "bridgestone_tour_b_x",
+  bridgestone_xs: "bridgestone_tour_b_xs",
+  callaway_chrome_soft: "callaway_chrome_soft",
+  callaway_chrome_tour: "callaway_chrome_tour",
+  callaway_chrome_tour_td: "callaway_chrome_tour_triple_diamond",
+  callaway_chrome_tour_x: "callaway_chrome_tour_x",
+  callaway_erc: "callaway_erc_soft",
+  kirkland: "kirkland_performanceplus_v35",
+  maxfli_tour: "maxfli_tour",
+  maxfli_tour_s: "maxfli_tour_s",
+  maxfli_tour_x: "maxfli_tour_x",
+  members_mark: "members_mark_pro_series_2",
+  mizuno_pro_s: "mizuno_pro_s",
+  mizuno_pro_x: "mizuno_pro_x",
+  pxg_xtreme: "pxg_xtreme_tour",
+  pxg_xtreme_x: "pxg_xtreme_tour_x",
+  srixon_qstar: "srixon_q-star_tour",
+  srixon_zstar: "srixon_z-star",
+  srixon_zstar_diamond: "srixon_z-star_diamond",
+  srixon_zstar_divide: "srixon_z-star_divide",
+  srixon_zstar_xv: "srixon_z-star_xv",
+  taylormade_tp5: "taylormade_tp5",
+  taylormade_tp5x: "taylormade_tp5x",
+  taylormade_tour_response: "taylormade_tour_response",
+  titleist_avx: "titleist_avx",
+  titleist_prov1: "titleist_pro_v1",
+  titleist_prov1x: "titleist_pro_v1x",
+  titleist_prov1x_ld: "titleist_pro_v1x_left_dash",
+  titleist_tour_soft: "titleist_tour_soft",
+  vice_pro: "vice_pro",
+  vice_pro_air: "vice_pro_air",
+  vice_pro_plus: "vice_pro_plus",
+  wilson_model: "wilson_staff_model",
+  wilson_model_x: "wilson_staff_model_x",
+  wilson_triad: "wilson_triad",
+};
+
+function getTierKey(swingSpeed) {
+  if (swingSpeed === 'fast') return 'fast';
+  if (swingSpeed === 'mid')  return 'mid';
+  return 'slow';
+}
+
+function getBallTierData(ballKey, tierKey) {
+  const b = BALL_DATA[ballKey];
+  if (!b) return null;
+  return b[tierKey] || b.mid || b.fast || b.slow || null;
+}
+
+// ── SCORING & RESULTS ──
+// ── STEP INTERACTION ──
+function updateProgress(step) {
+  const pct = Math.round((step/totalSteps)*100);
+  document.getElementById('progress-fill').style.width = pct+'%';
+  document.getElementById('step-label').textContent = `Step ${step} of ${totalSteps}`;
+  document.getElementById('step-pct').textContent = pct+'%';
+}
+function showStep(n) {
+  document.querySelectorAll('[id^="step-"]').forEach(el=>{ if(el.id!=='step-label') el.style.display='none'; });
+  const el = document.getElementById('step-'+n);
+  if(el){ el.style.display='block'; el.style.animation='none'; void el.offsetWidth; el.style.animation=''; }
+  updateProgress(n); currentStep=n;
+}
+function nextStep(from){ showStep(from+1); window.scrollTo({top:0,behavior:'smooth'}); }
+function prevStep(from){ showStep(from-1); window.scrollTo({top:0,behavior:'smooth'}); }
+
+function selectOption(btn) {
+  const step = btn.dataset.step;
+  document.querySelectorAll(`.option-btn[data-step="${step}"]`).forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const val = btn.dataset.val;
+  if(step==='1'){ answers.swingSpeed=val; document.getElementById('next-1').disabled=false; }
+  if(step==='3'){ answers.launchPref=val; document.getElementById('next-3').disabled=false; }
+  if(step==='4'){ answers.spinPref=val;   document.getElementById('next-4').disabled=false; }
+  if(step==='5'){ answers.feelImportant=val; checkFeel(); }
+  if(step==='6'){ answers.greensideImportant=val; checkGreenside(); }
+}
+function selectSubOption(btn, field) {
+  document.querySelectorAll(`.option-btn[data-field="${field}"]`).forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  subAnswers[field] = btn.dataset.val;
+  if(field==='feel-pref'){ answers.feelPref=btn.dataset.val; checkFeel(); }
+  if(field==='green-pref'){ answers.greensidePref=btn.dataset.val; checkGreenside(); }
+}
+function checkFeel(){
+  const skip = answers.feelImportant==='skip';
+  document.getElementById('next-5').disabled = !(skip||(answers.feelImportant==='yes'&&answers.feelPref));
+}
+function checkGreenside(){
+  const skip = answers.greensideImportant==='skip';
+  document.getElementById('next-6').disabled = !(skip||(answers.greensideImportant==='yes'&&answers.greensidePref));
+}
+function showFeelSub(){ document.getElementById('feel-sub').classList.add('visible'); }
+function hideFeelSub(){ document.getElementById('feel-sub').classList.remove('visible'); answers.feelPref=null; checkFeel(); }
+function showGreenSub(){ document.getElementById('green-sub').classList.add('visible'); }
+function hideGreenSub(){ document.getElementById('green-sub').classList.remove('visible'); answers.greensidePref=null; checkGreenside(); }
+
+function onBallSelect() {
+  const val    = document.getElementById('current-ball').value;
+  answers.currentBall = val;
+  const snap   = document.getElementById('ball-snapshot');
+  const manual = document.getElementById('manual-ball-fields');
+
+  if(!val){ snap.classList.remove('visible'); manual.style.display='none'; document.getElementById('next-2').disabled=true; return; }
+
+  if(val==='unlisted'){
+    snap.classList.remove('visible'); manual.style.display='block';
+    document.getElementById('next-2').disabled=true;
+  } else {
+    manual.style.display='none';
+    const ballKey = BALL_KEY_MAP[val];
+    const ballObj = ballKey ? BALL_DATA[ballKey] : null;
+    const tier    = getTierKey(answers.swingSpeed||'mid');
+    const d       = ballObj ? (ballObj[tier]||ballObj.mid||ballObj.fast) : null;
+    const launchLbls = ['','Low','Mid','High'];
+    const feelLbls   = ['','Soft','Medium','Firm'];
+    document.getElementById('snap-launch').textContent = d ? (launchLbls[d.launch]||'Mid') : 'Mid';
+    document.getElementById('snap-feel').textContent   = ballObj ? (feelLbls[ballObj.feel]||'Medium') : 'Medium';
+    document.getElementById('snap-spin').textContent   = d ? (launchLbls[d.wedge_spin]||'Mid') : 'Mid';
+    snap.classList.add('visible');
+    document.getElementById('next-2').disabled=false;
+  }
+}
+
+// Init quiz
+showStep(1);
+
+function getExcludedBrands() {
+  const checkboxes = document.querySelectorAll('.brand-exclude-cb:checked');
+  return Array.from(checkboxes).map(cb => cb.value);
+}
+
+function pickTopDiversified(candidates, count) {
+  // Pick top `count` results with no two from the same brand
+  const picked = [];
+  const usedBrands = new Set();
+  for (const c of candidates) {
+    if (picked.length >= count) break;
+    if (!usedBrands.has(c.ball.brand)) {
+      picked.push(c);
+      usedBrands.add(c.ball.brand);
+    }
+  }
+  // If we couldn't fill all slots with unique brands, fill remaining without brand restriction
+  for (const c of candidates) {
+    if (picked.length >= count) break;
+    if (!picked.includes(c)) picked.push(c);
+  }
+  return picked;
+}
+
+function findBall() {
+  answers.costco   = document.getElementById('costco').checked;
+  answers.samsclub = document.getElementById('samsclub').checked;
+
+  const tier = getTierKey(answers.swingSpeed);
+
+  // Get current ball's tier data for relative comparisons
+  let curTierData = null;
+  if (answers.currentBall && answers.currentBall !== 'unlisted') {
+    const curKey = BALL_KEY_MAP[answers.currentBall];
+    if (curKey) {
+      const curBall = BALL_DATA[curKey];
+      if (curBall) curTierData = curBall[tier] || curBall.mid || null;
+    }
+  }
+  if (answers.currentBall === 'unlisted' && subAnswers.launch && subAnswers.spin) {
+    const lm = {low:1,mid:2,high:3};
+    const sm = {low:1,high:3};
+    const fm = {soft:1,medium:2,firm:3};
+    curTierData = {
+      launch: lm[subAnswers.launch]||2,
+      driver_spin: sm[subAnswers.spin]||2,
+      wedge_spin: sm[subAnswers.spin]||2,
+      feel: fm[subAnswers.feel]||2,
+    };
+  }
+
+  const scored = Object.entries(BALL_DATA)
+    .filter(([key, ball]) => {
+      if (ball.costcoOnly && !answers.costco)   return false;
+      if (ball.samsOnly   && !answers.samsclub) return false;
+      const currentKey = BALL_KEY_MAP[answers.currentBall];
+      if (key === currentKey) return false;
+      if (!ball[tier]) return false;
+      return true;
+    })
+    .map(([key, ball]) => {
+      const d = ball[tier];
+      let score = 0;
+
+      // Launch (weight 3)
+      const targetLaunch = curTierData
+        ? (answers.launchPref === 'higher' ? Math.min(curTierData.launch+1,3)
+         : answers.launchPref === 'lower'  ? Math.max(curTierData.launch-1,1)
+         : curTierData.launch)
+        : (answers.launchPref==='higher'?3:answers.launchPref==='lower'?1:2);
+      score += (3 - Math.abs(d.launch - targetLaunch)) * 3;
+
+      // Driver spin (weight 3)
+      const targetSpin = curTierData
+        ? (answers.spinPref === 'more' ? Math.min(curTierData.driver_spin+1,3)
+         : answers.spinPref === 'less' ? Math.max(curTierData.driver_spin-1,1)
+         : curTierData.driver_spin)
+        : (answers.spinPref==='more'?3:answers.spinPref==='less'?1:2);
+      score += (3 - Math.abs(d.driver_spin - targetSpin)) * 3;
+
+      // Feel (weight 2)
+      if (answers.feelImportant === 'yes' && answers.feelPref) {
+        const curFeel = curTierData ? (BALL_DATA[BALL_KEY_MAP[answers.currentBall]]?.feel || 2) : 2;
+        const targetFeel = answers.feelPref==='softer' ? Math.max(curFeel-1,1)
+                         : answers.feelPref==='firmer' ? Math.min(curFeel+1,3)
+                         : curFeel;
+        score += (3 - Math.abs(ball.feel - targetFeel)) * 2;
+      }
+
+      // Greenside / wedge spin (weight 3)
+      if (answers.greensideImportant === 'yes' && answers.greensidePref) {
+        const targetWedge = answers.greensidePref === 'more' ? 3 : 1;
+        score += (3 - Math.abs(d.wedge_spin - targetWedge)) * 3;
+      }
+
+      // Small carry bonus (tiebreaker)
+      if (d.carry) score += d.carry / 200;
+
+      return { key, ball, tierData: d, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4);
+
+  renderResults(scored);
+}
+function buildAffiliateUrl(asin) {
+  // Replace YOUR_AFFILIATE_TAG with your actual Amazon Associates tag
+  return `https://www.amazon.com/dp/${asin}?tag=YOUR_AFFILIATE_TAG`;
+}
+
+function getResultReason(result, rank) {
+  const ball = result.ball;
+  const d    = result.tierData;
+  const launchWords = ['low-launching','mid-launching','high-launching'];
+  const spinWords   = ['low driver-spin','mid driver-spin','high driver-spin'];
+  const wedgeWords  = ['lower greenside spin','mid greenside spin','high greenside spin'];
+  const feelWords   = ['soft','medium','firm'];
+  const l  = launchWords[(d.launch||2)-1];
+  const s  = spinWords[(d.driver_spin||2)-1];
+  const w  = wedgeWords[(d.wedge_spin||2)-1];
+  const f  = feelWords[(ball.feel||2)-1];
+  const carry = d.carry ? ` Carry: ${d.carry} yds.` : '';
+  const rawSpin = d.raw_driver_spin ? ` (${Math.round(d.raw_driver_spin).toLocaleString()} RPM driver spin)` : '';
+  const rawLaunch = d.raw_launch ? ` / ${d.raw_launch}° launch` : '';
+
+  const reasons = [
+    `Best overall match for your preferences — ${l}, ${s}${rawSpin}${rawLaunch}, ${w}, ${f} feel.${carry}`,
+    `Strong runner-up. Very close score to the top pick — a ${l}, ${s} ball with ${w}.${carry}`,
+    `Solid third option. The ${f} feel and ${w} profile may suit your game well.${carry}`,
+    `Worth considering as an alternative — ${l} with ${s} and ${w}.${carry}`
+  ];
+  return reasons[rank] || reasons[3];
+}
+
+function renderResults(scored) {
+  document.getElementById('quiz').style.display = 'none';
+  document.getElementById('results').classList.add('visible');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  const grid = document.getElementById('results-grid');
+  const labels = ['Top Pick','Runner Up','Also Consider','Also Consider'];
+
+  grid.innerHTML = scored.map((r, i) => `
+    <div class="result-card ${i===0?'top-pick':''}">
+      <div class="result-rank">${i+1}</div>
+      <div class="result-info">
+        <span class="result-badge">${labels[i]}</span>
+        <h3 class="result-name">${r.ball.name}</h3>
+        <p class="result-why">${getResultReason(r, i)}</p>
+      </div>
+      <div class="result-action">
+        <a href="${buildAffiliateUrl(r.ball.amazon)}" class="btn-buy" target="_blank" rel="noopener noreferrer">Buy on Amazon</a>
+      </div>
+    </div>`).join('');
+}
+
+
+function toggleBrandFilter(e) {
+  e.preventDefault();
+  const grid = document.getElementById('brand-filter-grid');
+  const btn  = e.target;
+  if (grid.style.display === 'none') {
+    grid.style.display = 'grid';
+    btn.textContent = 'Hide brand filter ▴';
+  } else {
+    grid.style.display = 'none';
+    btn.textContent = 'Show brand filter ▾';
+  }
+}
+
+function restartQuiz() {
+  Object.keys(answers).forEach(k => answers[k] = null);
+  answers.costco = false; answers.samsclub = false;
+  Object.keys(subAnswers).forEach(k => subAnswers[k] = null);
+  document.getElementById('quiz').style.display = 'block';
+  document.getElementById('results').classList.remove('visible');
+  document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('[id^="next-"]').forEach(b => b.disabled = true);
+  document.getElementById('current-ball').value = '';
+  document.getElementById('ball-snapshot').classList.remove('visible');
+  document.getElementById('manual-ball-fields').style.display = 'none';
+  document.getElementById('feel-sub').classList.remove('visible');
+  document.getElementById('green-sub').classList.remove('visible');
+  document.querySelectorAll('.brand-exclude-cb').forEach(cb => cb.checked = false);
+  const bgrid = document.getElementById('brand-filter-grid');
+  if (bgrid) bgrid.style.display = 'none';
+  const bbtn = document.querySelector('.brand-filter-toggle');
+  if (bbtn) bbtn.textContent = 'Show brand filter ▾';
+  showStep(1);
+}
+
+// Init
+showStep(1);
+</script>
+</body>
+</html>

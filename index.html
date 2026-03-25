@@ -3,753 +3,273 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chasing Bogeys — Golf Tools for the Rest of Us</title>
+<title>Chasing Bogeys — Coming Soon</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --green-deep:   #1a3a2a;
-    --green-mid:    #2d5a3d;
-    --green-bright: #4a8c5c;
-    --green-light:  #a8d5b5;
-    --cream:        #f5f0e8;
-    --cream-dark:   #e8e0d0;
-    --tan:          #c9b99a;
-    --gold:         #c8952a;
-    --gold-light:   #e8b84b;
-    --white:        #fefefe;
-    --text-dark:    #1a1a18;
-    --text-mid:     #3d3d38;
-    --text-muted:   #7a7a72;
-    --serif: 'Playfair Display', Georgia, serif;
-    --sans:  'DM Sans', system-ui, sans-serif;
-  }
-
-  html { scroll-behavior: smooth; }
-
-  body {
-    font-family: var(--sans);
-    background: var(--cream);
-    color: var(--text-dark);
-    overflow-x: hidden;
-  }
-
-  /* ── NAV ── */
-  nav {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-    background: var(--green-deep);
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 3rem;
-    height: 64px;
-    border-bottom: 1px solid rgba(200,149,42,0.25);
-  }
-
-  .nav-logo {
-    font-family: var(--serif);
-    font-size: 1.25rem;
-    color: var(--cream);
-    text-decoration: none;
-    letter-spacing: 0.01em;
-  }
-
-  .nav-logo span { color: var(--gold-light); font-style: italic; }
-
-  .nav-links {
-    display: flex; align-items: center; gap: 2rem;
-    list-style: none;
-  }
-
-  .nav-links a {
-    color: var(--cream-dark);
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 400;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    transition: color 0.2s;
-  }
-
-  .nav-links a:hover { color: var(--gold-light); }
-
-  .nav-cta {
-    background: var(--gold) !important;
-    color: var(--green-deep) !important;
-    padding: 0.5rem 1.25rem;
-    border-radius: 4px;
-    font-weight: 500 !important;
-    transition: background 0.2s !important;
-  }
-
-  .nav-cta:hover { background: var(--gold-light) !important; }
-
-  /* ── HERO ── */
-  .hero {
-    min-height: 100vh;
-    background: var(--green-deep);
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    align-items: center;
-    padding: 8rem 3rem 4rem;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .hero::before {
-    content: '';
-    position: absolute;
-    top: -20%; right: -10%;
-    width: 65vw; height: 130%;
-    background: var(--green-mid);
-    border-radius: 50% 0 0 50%;
-    opacity: 0.5;
-  }
-
-  .hero::after {
-    content: '';
-    position: absolute;
-    bottom: 5%; left: 10%;
-    width: 300px; height: 300px;
-    border: 1px solid rgba(200,149,42,0.15);
-    border-radius: 50%;
-  }
-
-  .hero-text { position: relative; z-index: 2; max-width: 540px; }
-
-  .hero-eyebrow {
-    font-family: var(--sans);
-    font-size: 0.75rem;
-    font-weight: 500;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 1.25rem;
-  }
-
-  .hero-headline {
-    font-family: var(--serif);
-    font-size: clamp(2.5rem, 5vw, 4rem);
-    line-height: 1.1;
-    color: var(--cream);
-    margin-bottom: 1.5rem;
-  }
-
-  .hero-headline em {
-    color: var(--gold-light);
-    font-style: italic;
-  }
-
-  .hero-sub {
-    font-size: 1.1rem;
-    font-weight: 300;
-    line-height: 1.7;
-    color: var(--green-light);
-    margin-bottom: 2.5rem;
-    max-width: 440px;
-  }
-
-  .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
-
-  .btn-primary {
-    display: inline-block;
-    background: var(--gold);
-    color: var(--green-deep);
-    font-family: var(--sans);
-    font-size: 0.9rem;
-    font-weight: 500;
-    text-decoration: none;
-    padding: 0.85rem 2rem;
-    border-radius: 4px;
-    letter-spacing: 0.02em;
-    transition: background 0.2s, transform 0.15s;
-  }
-
-  .btn-primary:hover { background: var(--gold-light); transform: translateY(-1px); }
-
-  .btn-secondary {
-    display: inline-block;
-    border: 1px solid rgba(200,185,154,0.4);
-    color: var(--cream-dark);
-    font-family: var(--sans);
-    font-size: 0.9rem;
-    font-weight: 400;
-    text-decoration: none;
-    padding: 0.85rem 2rem;
-    border-radius: 4px;
-    letter-spacing: 0.02em;
-    transition: border-color 0.2s, color 0.2s;
-  }
-
-  .btn-secondary:hover { border-color: var(--gold); color: var(--gold-light); }
-
-  /* scorecard decoration */
-  .hero-scorecard {
-    position: relative; z-index: 2;
-    display: flex; justify-content: center; align-items: center;
-  }
-
-  .scorecard-mock {
-    background: var(--white);
-    border-radius: 8px;
-    padding: 1.75rem;
-    width: 340px;
-    box-shadow: 0 24px 80px rgba(0,0,0,0.35);
-    transform: rotate(2deg);
-  }
-
-  .scorecard-header {
-    display: flex; justify-content: space-between; align-items: baseline;
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 2px solid var(--green-mid);
-  }
-
-  .scorecard-title {
-    font-family: var(--serif);
-    font-size: 1rem;
-    color: var(--green-deep);
-  }
-
-  .scorecard-course {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    font-style: italic;
-  }
-
-  .scorecard-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-  .scorecard-table th {
-    background: var(--green-deep);
-    color: var(--cream);
-    text-align: center;
-    padding: 0.3rem 0.4rem;
-    font-weight: 500;
-    font-size: 0.7rem;
-    letter-spacing: 0.05em;
-  }
-
-  .scorecard-table td {
-    text-align: center;
-    padding: 0.3rem 0.4rem;
-    border-bottom: 1px solid var(--cream-dark);
-    color: var(--text-mid);
-  }
-
-  .scorecard-table tr:last-child td { border-bottom: none; }
-
-  .score-bogey { color: var(--green-mid); font-weight: 500; }
-  .score-double { color: var(--gold); }
-  .score-par { color: var(--text-muted); }
-  .score-birdie {
-    color: var(--white);
-    background: var(--green-mid);
-    border-radius: 50%;
-    width: 20px; height: 20px;
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 0.75rem;
-  }
-
-  .scorecard-total {
-    margin-top: 0.75rem;
-    padding-top: 0.75rem;
-    border-top: 2px solid var(--green-mid);
-    display: flex; justify-content: space-between; align-items: baseline;
-  }
-
-  .total-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; }
-  .total-score { font-family: var(--serif); font-size: 1.5rem; color: var(--green-deep); }
-  .total-diff { font-size: 0.8rem; color: var(--green-bright); font-weight: 500; }
-
-  /* ── SECTION SHARED ── */
-  section { padding: 6rem 3rem; }
-
-  .section-label {
-    font-size: 0.72rem;
-    font-weight: 500;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 0.75rem;
-  }
-
-  .section-heading {
-    font-family: var(--serif);
-    font-size: clamp(2rem, 4vw, 3rem);
-    line-height: 1.2;
-    color: var(--green-deep);
-    margin-bottom: 1rem;
-    max-width: 600px;
-  }
-
-  .section-sub {
-    font-size: 1rem;
-    font-weight: 300;
-    line-height: 1.7;
-    color: var(--text-muted);
-    max-width: 540px;
-    margin-bottom: 3rem;
-  }
-
-  /* ── PHILOSOPHY STRIP ── */
-  .philosophy {
-    background: var(--green-deep);
-    padding: 4rem 3rem;
-    display: flex;
-    align-items: center;
-    gap: 4rem;
-  }
-
-  .philosophy-quote {
-    font-family: var(--serif);
-    font-size: clamp(1.5rem, 3vw, 2.25rem);
-    font-style: italic;
-    color: var(--cream);
-    line-height: 1.35;
-    flex: 1;
-    border-left: 3px solid var(--gold);
-    padding-left: 2rem;
-  }
-
-  .philosophy-text {
-    flex: 1;
-    font-size: 0.95rem;
-    font-weight: 300;
-    line-height: 1.8;
-    color: var(--green-light);
-    max-width: 420px;
-  }
-
-  /* ── TOOLS ── */
-  .tools { background: var(--white); }
-
-  .tools-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-  }
-
-  .tool-card {
-    background: var(--cream);
-    border: 1px solid var(--cream-dark);
-    border-radius: 8px;
-    padding: 2rem;
-    text-decoration: none;
-    color: inherit;
-    display: block;
-    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .tool-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: var(--green-mid);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.3s;
-  }
-
-  .tool-card:hover { transform: translateY(-3px); border-color: var(--green-light); }
-  .tool-card:hover::before { transform: scaleX(1); }
-
-  .tool-icon {
-    width: 48px; height: 48px;
-    background: var(--green-deep);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    margin-bottom: 1.25rem;
-    font-size: 1.4rem;
-  }
-
-  .tool-tag {
-    display: inline-block;
-    font-size: 0.65rem;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    background: var(--green-light);
-    color: var(--green-deep);
-    padding: 0.2rem 0.6rem;
-    border-radius: 3px;
-    margin-bottom: 0.75rem;
-  }
-
-  .tool-tag.coming-soon {
-    background: var(--cream-dark);
-    color: var(--text-muted);
-  }
-
-  .tool-name {
-    font-family: var(--serif);
-    font-size: 1.4rem;
-    color: var(--green-deep);
-    margin-bottom: 0.6rem;
-  }
-
-  .tool-desc {
-    font-size: 0.9rem;
-    font-weight: 300;
-    line-height: 1.7;
-    color: var(--text-muted);
-    margin-bottom: 1.25rem;
-  }
-
-  .tool-link {
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: var(--green-mid);
-    letter-spacing: 0.04em;
-    display: flex; align-items: center; gap: 0.4rem;
-  }
-
-  .tool-card:not([data-disabled]) .tool-link::after {
-    content: '→';
-    transition: transform 0.2s;
-  }
-
-  .tool-card:hover .tool-link::after { transform: translateX(4px); }
-
-  /* ── BLOG TEASER ── */
-  .blog { background: var(--cream); }
-
-  .blog-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2.5rem;
-  }
-
-  .post-card {
-    background: var(--white);
-    border: 1px solid var(--cream-dark);
-    border-radius: 8px;
-    padding: 1.75rem;
-    text-decoration: none;
-    color: inherit;
-    display: block;
-    transition: transform 0.2s, border-color 0.2s;
-  }
-
-  .post-card:hover { transform: translateY(-2px); border-color: var(--tan); }
-
-  .post-category {
-    font-size: 0.65rem;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 0.6rem;
-  }
-
-  .post-title {
-    font-family: var(--serif);
-    font-size: 1.15rem;
-    line-height: 1.35;
-    color: var(--green-deep);
-    margin-bottom: 0.75rem;
-  }
-
-  .post-excerpt {
-    font-size: 0.875rem;
-    font-weight: 300;
-    line-height: 1.7;
-    color: var(--text-muted);
-    margin-bottom: 1rem;
-  }
-
-  .post-meta {
-    font-size: 0.75rem;
-    color: var(--tan);
-    display: flex; align-items: center; gap: 0.5rem;
-  }
-
-  .post-meta span { color: var(--cream-dark); }
-
-  /* ── FOOTER ── */
-  footer {
-    background: var(--green-deep);
-    padding: 3rem;
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
-    gap: 3rem;
-    border-top: 1px solid rgba(200,149,42,0.2);
-  }
-
-  .footer-brand { }
-
-  .footer-logo {
-    font-family: var(--serif);
-    font-size: 1.2rem;
-    color: var(--cream);
-    margin-bottom: 0.75rem;
-  }
-
-  .footer-logo em { color: var(--gold-light); }
-
-  .footer-tagline {
-    font-size: 0.85rem;
-    font-weight: 300;
-    color: var(--green-light);
-    line-height: 1.7;
-    max-width: 280px;
-  }
-
-  .footer-col h4 {
-    font-size: 0.7rem;
-    font-weight: 500;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 1rem;
-  }
-
-  .footer-col ul { list-style: none; }
-
-  .footer-col li { margin-bottom: 0.5rem; }
-
-  .footer-col a {
-    font-size: 0.875rem;
-    font-weight: 300;
-    color: var(--green-light);
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-
-  .footer-col a:hover { color: var(--cream); }
-
-  .footer-bottom {
-    background: var(--green-deep);
-    padding: 1.25rem 3rem;
-    border-top: 1px solid rgba(255,255,255,0.05);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-  }
-
-  .footer-bottom a {
-    color: var(--text-muted);
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-
-  .footer-bottom a:hover { color: var(--cream); }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 768px) {
-    nav { padding: 0 1.5rem; }
-    .nav-links { display: none; }
-    .hero { grid-template-columns: 1fr; padding: 7rem 1.5rem 3rem; }
-    .hero-scorecard { display: none; }
-    section { padding: 4rem 1.5rem; }
-    .philosophy { flex-direction: column; padding: 3rem 1.5rem; gap: 2rem; }
-    footer { grid-template-columns: 1fr; gap: 2rem; padding: 2rem 1.5rem; }
-    .footer-bottom { flex-direction: column; gap: 0.5rem; padding: 1rem 1.5rem; text-align: center; }
-  }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --green-deep: #1a3a2a; --green-mid: #2d5a3d; --green-bright: #4a8c5c;
+  --green-light: #a8d5b5; --cream: #f5f0e8; --cream-dark: #e8e0d0;
+  --gold: #c8952a; --gold-light: #e8b84b; --white: #fefefe;
+  --text-muted: #7a7a72; --red: #c0392b;
+  --serif: 'Playfair Display', Georgia, serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+}
+
+html, body {
+  height: 100%; font-family: var(--sans);
+  background: var(--green-deep); color: var(--cream);
+  overflow: hidden;
+}
+
+/* Background texture */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(45,90,61,0.6) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 30%, rgba(26,58,42,0.8) 0%, transparent 50%);
+}
+
+/* Decorative circles */
+body::after {
+  content: '';
+  position: fixed;
+  width: 600px; height: 600px;
+  border: 1px solid rgba(200,149,42,0.08);
+  border-radius: 50%;
+  bottom: -200px; right: -150px;
+  z-index: 0;
+}
+
+.page {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 2rem;
+}
+
+/* Logo */
+.logo {
+  font-family: var(--serif);
+  font-size: 2rem;
+  color: var(--cream);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.01em;
+}
+.logo em { color: var(--gold-light); font-style: italic; }
+
+.tagline {
+  font-size: 0.78rem;
+  font-weight: 300;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--green-light);
+  margin-bottom: 3rem;
+}
+
+/* Card */
+.card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(200,149,42,0.2);
+  border-radius: 12px;
+  padding: 2.5rem 2.75rem;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  backdrop-filter: blur(4px);
+}
+
+.card-icon {
+  width: 52px; height: 52px;
+  background: rgba(200,149,42,0.15);
+  border: 1px solid rgba(200,149,42,0.3);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 1.5rem;
+  font-size: 1.4rem;
+}
+
+.card-title {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  color: var(--cream);
+  margin-bottom: 0.5rem;
+}
+
+.card-sub {
+  font-size: 0.85rem;
+  font-weight: 300;
+  color: var(--green-light);
+  line-height: 1.65;
+  margin-bottom: 2rem;
+}
+
+/* Input */
+.input-wrap { position: relative; margin-bottom: 1rem; }
+
+.pw-input {
+  width: 100%;
+  padding: 0.85rem 3rem 0.85rem 1.1rem;
+  font-family: var(--sans);
+  font-size: 1rem;
+  background: rgba(255,255,255,0.07);
+  border: 1.5px solid rgba(200,149,42,0.25);
+  border-radius: 8px;
+  color: var(--cream);
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+.pw-input::placeholder {
+  color: rgba(168,213,181,0.4);
+  letter-spacing: 0.05em;
+}
+.pw-input:focus {
+  border-color: var(--gold);
+  background: rgba(255,255,255,0.1);
+}
+.pw-input.error {
+  border-color: var(--red);
+  animation: shake 0.3s ease;
+}
+@keyframes shake {
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(-6px)}
+  75%{transform:translateX(6px)}
+}
+
+/* Toggle visibility button */
+.toggle-vis {
+  position: absolute; right: 0.85rem; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: none; cursor: pointer;
+  color: rgba(168,213,181,0.5);
+  font-size: 1rem; line-height: 1;
+  padding: 0.25rem;
+  transition: color 0.2s;
+}
+.toggle-vis:hover { color: var(--green-light); }
+
+/* Error message */
+.error-msg {
+  font-size: 0.78rem;
+  color: #e57373;
+  margin-bottom: 1rem;
+  min-height: 1.2em;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.error-msg.visible { opacity: 1; }
+
+/* Submit button */
+.btn-enter {
+  width: 100%;
+  padding: 0.9rem;
+  background: var(--gold);
+  color: var(--green-deep);
+  border: none;
+  border-radius: 8px;
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: background 0.18s, transform 0.15s;
+}
+.btn-enter:hover { background: var(--gold-light); transform: translateY(-1px); }
+.btn-enter:active { transform: translateY(0); }
+
+/* Footer note */
+.footer-note {
+  margin-top: 2.5rem;
+  font-size: 0.72rem;
+  font-weight: 300;
+  color: rgba(168,213,181,0.4);
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 480px) {
+  .card { padding: 2rem 1.5rem; }
+  .logo { font-size: 1.6rem; }
+}
 </style>
 </head>
 <body>
 
-<!-- NAV -->
-<nav>
-  <a href="/" class="nav-logo">Chasing <em>Bogeys</em></a>
-  <ul class="nav-links">
-    <li><a href="#tools">Tools</a></li>
-    <li><a href="#blog">Blog</a></li>
-    <li><a href="#about">About</a></li>
-    <li><a href="#tools" class="nav-cta">Get Started</a></li>
-  </ul>
-</nav>
+<div class="page">
 
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-text">
-    <p class="hero-eyebrow">For the aspiring amateur</p>
-    <h1 class="hero-headline">
-      Golf tools built for<br>
-      <em>the rest of us</em>
-    </h1>
-    <p class="hero-sub">
-      Bogeys are good. Great, even. Chasing Bogeys is your companion on the journey — honest tools, honest talk, from a golfer still figuring it out right alongside you.
-    </p>
-    <div class="hero-actions">
-      <a href="#tools" class="btn-primary">Explore the Tools</a>
-      <a href="#about" class="btn-secondary">Our Philosophy</a>
+  <div class="logo">Chasing <em>Bogeys</em></div>
+  <div class="tagline">Golf tools for the rest of us</div>
+
+  <div class="card">
+    <div class="card-icon">⛳</div>
+    <h1 class="card-title">Early Access</h1>
+    <p class="card-sub">This site is currently in development. Enter the password to take a look around.</p>
+
+    <div class="input-wrap">
+      <input
+        class="pw-input"
+        id="pw"
+        type="password"
+        placeholder="Password"
+        autocomplete="off"
+        onkeydown="if(event.key==='Enter')checkPW()"
+        oninput="clearError()"
+      >
+      <button class="toggle-vis" onclick="toggleVis()" tabindex="-1" aria-label="Show/hide password">👁</button>
     </div>
+
+    <div class="error-msg" id="error-msg">Incorrect password — try again.</div>
+
+    <button class="btn-enter" onclick="checkPW()">Enter Site →</button>
   </div>
 
-  <div class="hero-scorecard">
-    <div class="scorecard-mock">
-      <div class="scorecard-header">
-        <div class="scorecard-title">Avalon Golf Links</div>
-        <div class="scorecard-course">North / West · July 2025</div>
-      </div>
-      <table class="scorecard-table">
-        <thead>
-          <tr>
-            <th>Hole</th>
-            <th>Par</th>
-            <th>Score</th>
-            <th>+/-</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>1</td><td>4</td><td class="score-bogey">5</td><td class="score-bogey">+1</td></tr>
-          <tr><td>2</td><td>3</td><td class="score-par">3</td><td class="score-par">E</td></tr>
-          <tr><td>3</td><td>5</td><td class="score-bogey">6</td><td class="score-bogey">+1</td></tr>
-          <tr><td>4</td><td>4</td><td class="score-double">6</td><td class="score-double">+2</td></tr>
-          <tr><td>5</td><td>4</td><td class="score-bogey">5</td><td class="score-bogey">+1</td></tr>
-          <tr><td>6</td><td>3</td><td><span class="score-birdie">2</span></td><td style="color:var(--green-bright);font-weight:500">-1</td></tr>
-          <tr><td>7</td><td>5</td><td class="score-par">5</td><td class="score-par">E</td></tr>
-          <tr><td>8</td><td>4</td><td class="score-bogey">5</td><td class="score-bogey">+1</td></tr>
-          <tr><td>9</td><td>4</td><td class="score-bogey">5</td><td class="score-bogey">+1</td></tr>
-        </tbody>
-      </table>
-      <div class="scorecard-total">
-        <div>
-          <div class="total-label">Front 9</div>
-          <div class="total-score">42</div>
-        </div>
-        <div style="text-align:right">
-          <div class="total-label">To Par</div>
-          <div class="total-diff">+6</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+  <div class="footer-note">chasingbogeys.com</div>
 
-<!-- PHILOSOPHY -->
-<div class="philosophy">
-  <blockquote class="philosophy-quote">
-    "A bogey on every hole is a 90. That's not failure — that's a goal worth chasing."
-  </blockquote>
-  <p class="philosophy-text">
-    Most golf content is written by scratch players for scratch players. We built Chasing Bogeys for the 80% of golfers who will never break 80 — and are perfectly happy about that. Our tools and writing are grounded in where you actually are, not where a 2-handicapper imagines you should be.
-  </p>
 </div>
 
-<!-- TOOLS -->
-<section class="tools" id="tools">
-  <p class="section-label">The Toolkit</p>
-  <h2 class="section-heading">Tools that actually help your game</h2>
-  <p class="section-sub">No gimmicks, no subscription required to start. Just practical tools designed around how real golfers actually play.</p>
+<script>
+// Password is hashed so it's not readable in plain source
+// SHA-256 of "Lenny"
+const HASH = 'f59487f42b4b71316ea9af4f6eb1b7741cad0e84b7e74e9cba0c07f9ad22a5a4';
 
-  <div class="tools-grid">
-    <a href="what-ball.html" class="tool-card">
-      <div class="tool-icon">⛳</div>
-      <span class="tool-tag">Free Tool</span>
-      <h3 class="tool-name">What Ball?</h3>
-      <p class="tool-desc">Answer 7 quick questions about your game and we'll recommend the best ball for your swing speed, feel preference, and budget — from 37 robot-tested urethane balls.</p>
-      <div class="tool-link">Find my ball</div>
-    </a>
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
 
-    <a href="home-course-tracker.html" class="tool-card">
-      <div class="tool-icon">📊</div>
-      <span class="tool-tag">Free Tool</span>
-      <h3 class="tool-name">Home Course Tracker</h3>
-      <p class="tool-desc">Track your rounds at your regular courses hole by hole. Spot patterns, identify your blow-up holes, and watch your trending score improve over time.</p>
-      <div class="tool-link">Track my rounds</div>
-    </a>
+async function checkPW() {
+  const val = document.getElementById('pw').value;
+  if (!val) return;
+  const hash = await sha256(val);
+  if (hash === HASH) {
+    // Set a session flag and redirect
+    sessionStorage.setItem('cb_auth', '1');
+    window.location.href = 'home.html';
+  } else {
+    const inp = document.getElementById('pw');
+    const err = document.getElementById('error-msg');
+    inp.classList.add('error');
+    err.classList.add('visible');
+    inp.value = '';
+    inp.focus();
+    setTimeout(() => inp.classList.remove('error'), 400);
+  }
+}
 
-    <div class="tool-card" data-disabled>
-      <div class="tool-icon" style="background:var(--cream-dark)">🎯</div>
-      <span class="tool-tag coming-soon">Coming Soon</span>
-      <h3 class="tool-name" style="color:var(--text-muted)">Shot Pattern Tracker</h3>
-      <p class="tool-desc">Log your shots on the range or course, visualize your miss patterns, and understand where your ball actually goes — not where you think it goes.</p>
-      <div class="tool-link" style="color:var(--text-muted)">In development</div>
-    </div>
-  </div>
-</section>
+function clearError() {
+  document.getElementById('error-msg').classList.remove('visible');
+}
 
-<!-- BLOG -->
-<section class="blog" id="blog">
-  <p class="section-label">From the Fairway</p>
-  <h2 class="section-heading">Honest writing for improving golfers</h2>
-  <p class="section-sub">No tips from tour players. No miracle fixes. Just one golfer's honest account of what's working, what's not, and what's worth your money.</p>
-
-  <div class="blog-grid">
-    <a href="#" class="post-card">
-      <p class="post-category">Ball Reviews</p>
-      <h3 class="post-title">Why I Switched from the Pro V1 to the Srixon Z-Star</h3>
-      <p class="post-excerpt">After playing the Pro V1 for three seasons, I finally put my loyalty to the test. The numbers surprised me.</p>
-      <div class="post-meta">Coming soon <span>·</span> Equipment</div>
-    </a>
-
-    <a href="#" class="post-card">
-      <p class="post-category">Course Management</p>
-      <h3 class="post-title">The Blow-Up Hole: How to Stop a Bad Hole from Ruining Your Round</h3>
-      <p class="post-excerpt">Data from 40 rounds at my home course revealed a pattern I wasn't expecting. Here's what I found and what I changed.</p>
-      <div class="post-meta">Coming soon <span>·</span> Strategy</div>
-    </a>
-
-    <a href="#" class="post-card">
-      <p class="post-category">Practice</p>
-      <h3 class="post-title">A Bogey Golfer's Honest Review of 6 Months with a Launch Monitor</h3>
-      <p class="post-excerpt">I bought a Garmin Approach R10. Did it actually help? Spoiler: yes, but not in the way I expected.</p>
-      <div class="post-meta">Coming soon <span>·</span> Gear</div>
-    </a>
-  </div>
-
-  <a href="#" class="btn-primary" style="display:inline-block">Read the Blog</a>
-</section>
-
-<!-- ABOUT -->
-<section id="about" style="background:var(--white); display:grid; grid-template-columns:1fr 1fr; gap:4rem; align-items:center;">
-  <div>
-    <p class="section-label">About</p>
-    <h2 class="section-heading">Still figuring it out, just like you</h2>
-    <p style="font-size:1rem;font-weight:300;line-height:1.8;color:var(--text-muted);margin-bottom:1.5rem;">
-      Chasing Bogeys was built by a mid-handicapper who got tired of golf content written by people who can't remember what it feels like to card an 8 on a par 4.
-    </p>
-    <p style="font-size:1rem;font-weight:300;line-height:1.8;color:var(--text-muted);margin-bottom:1.5rem;">
-      The tools here are ones I wished existed when I started taking my game seriously. The blog is the honest account of someone on the same journey as you — bad rounds, good ones, gear experiments, and gradual improvement.
-    </p>
-    <p style="font-size:1rem;font-weight:300;line-height:1.8;color:var(--text-muted);">
-      The goal isn't scratch. The goal is bogeys.
-    </p>
-  </div>
-  <div style="background:var(--green-deep);border-radius:8px;padding:3rem;text-align:center;">
-    <div style="font-family:var(--serif);font-size:4rem;color:var(--gold-light);margin-bottom:0.5rem;">90</div>
-    <div style="font-size:0.8rem;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;color:var(--green-light);margin-bottom:1.5rem;">Bogey golf. Every hole.</div>
-    <div style="font-size:0.9rem;font-weight:300;color:var(--cream-dark);line-height:1.7;font-style:italic;">
-      "The average recreational golfer shoots around 100. Chasing Bogeys means aiming for 90 — one shot better per hole. That's it. That's the whole plan."
-    </div>
-  </div>
-</section>
-
-<!-- FOOTER -->
-<footer>
-  <div class="footer-brand">
-    <div class="footer-logo">Chasing <em>Bogeys</em></div>
-    <p class="footer-tagline">Golf tools and honest writing for the aspiring amateur. Still figuring it out, one bogey at a time.</p>
-  </div>
-  <div class="footer-col">
-    <h4>Tools</h4>
-    <ul>
-      <li><a href="what-ball.html">What Ball?</a></li>
-      <li><a href="home-course-tracker.html">Home Course Tracker</a></li>
-      <li><a href="#">Shot Pattern Tracker</a></li>
-    </ul>
-  </div>
-  <div class="footer-col">
-    <h4>Site</h4>
-    <ul>
-      <li><a href="#blog">Blog</a></li>
-      <li><a href="#about">About</a></li>
-      <li><a href="#">Affiliate Disclosure</a></li>
-    </ul>
-  </div>
-</footer>
-<div class="footer-bottom">
-  <span>© 2025 Chasing Bogeys. All rights reserved.</span>
-  <a href="#">Affiliate Disclosure</a>
-</div>
-
+function toggleVis() {
+  const inp = document.getElementById('pw');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+</script>
 </body>
 </html>

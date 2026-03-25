@@ -222,11 +222,11 @@ footer { background:var(--green-deep); padding:2rem 3rem; display:flex; justify-
     <div class="picker-card" id="pick-tg" onclick="pickDataset('tg')">
       <div class="picker-card-title">Today's Golfer Robot Test</div>
       <div class="picker-card-sub">UK-based test covering tour balls, club balls, and everything in between. Includes balls not in the MGS test (PXG Tour, Seed, non-urethane options).</div>
-      <div class="picker-card-meta">62 balls total (27 urethane + 35 non-urethane) · 3 swing speeds</div>
+      <div class="picker-card-meta">62 balls total (38 urethane + 24 non-urethane) · 3 swing speeds</div>
     </div>
   </div>
   <div class="filter-toggle" id="tg-filter">
-    <button class="filter-btn active" id="fb-urethane" onclick="setTGFilter('urethane')">Urethane only (27)</button>
+    <button class="filter-btn active" id="fb-urethane" onclick="setTGFilter('urethane')">Urethane only (38)</button>
     <button class="filter-btn" id="fb-all" onclick="setTGFilter('all')">All balls (62)</button>
   </div>
   <button class="btn-start-quiz" id="btn-start" disabled onclick="startQuiz()">Start the Quiz →</button>
@@ -461,22 +461,22 @@ footer { background:var(--green-deep); padding:2rem 3rem; display:flex; justify-
 // stats: [carry_mid, height_mid, drv_spin_mid, iron_spin, wedge_spin, carry_fast, carry_slow]
 // ══════════════════════════════════════
 const TG = {
-  'Bridgestone Tour B RX':{comp:99.0,price:44.99,u:false,co:0,sa:0,s:[206.5,22.0,2780.0,4733.0,5645.0,268.9,160.4]},
-  'Bridgestone Tour B RXS':{comp:81.0,price:44.99,u:false,co:0,sa:0,s:[206.2,22.2,2815.0,4813.0,5702.0,263.8,159.2]},
+  'Bridgestone Tour B RX':{comp:99.0,price:44.99,u:true,co:0,sa:0,s:[206.5,22.0,2780.0,4733.0,5645.0,268.9,160.4]},
+  'Bridgestone Tour B RXS':{comp:81.0,price:44.99,u:true,co:0,sa:0,s:[206.2,22.2,2815.0,4813.0,5702.0,263.8,159.2]},
   'Bridgestone Tour B X':{comp:112.0,price:44.99,u:true,co:0,sa:0,s:[208.7,22.7,2810.0,4787.0,5972.0,268.3,160.5]},
   'Bridgestone Tour B XS':{comp:99.0,price:44.99,u:true,co:0,sa:0,s:[206.7,22.8,3059.0,5170.0,6036.0,268.4,160.5]},
   'Bridgestone e12 HiLaunch':{comp:43.0,price:29.99,u:false,co:0,sa:0,s:[204.6,21.4,2518.0,4206.0,5437.0,265.7,158.7]},
   'Bridgestone e12 Speed':{comp:103.0,price:29.99,u:false,co:0,sa:0,s:[209.7,22.3,2574.0,4467.0,5951.0,273.9,161.3]},
   'Bridgestone e12 Straight':{comp:75.0,price:29.99,u:false,co:0,sa:0,s:[206.8,21.9,2642.0,4240.0,5556.0,267.5,159.2]},
   'Bridgestone e6 Soft Feel':{comp:45.0,price:24.99,u:false,co:0,sa:0,s:[204.6,21.3,2528.0,4454.0,5551.0,265.8,158.1]},
-  'Callaway Chrome Soft':{comp:81.0,price:49.99,u:false,co:0,sa:0,s:[207.6,22.4,2712.0,4356.0,5518.0,268.6,160.5]},
+  'Callaway Chrome Soft':{comp:81.0,price:49.99,u:true,co:0,sa:0,s:[207.6,22.4,2712.0,4356.0,5518.0,268.6,160.5]},
   'Callaway Chrome Tour':{comp:113.0,price:54.99,u:true,co:0,sa:0,s:[210.8,22.7,2701.0,4658.0,6036.0,275.4,161.8]},
   'Callaway Chrome Tour Triple Diamond':{comp:112.0,price:54.99,u:true,co:0,sa:0,s:[209.4,22.6,2738.0,4606.0,5867.0,272.4,161.1]},
   'Callaway Chrome Tour X':{comp:111.0,price:54.99,u:true,co:0,sa:0,s:[208.9,23.4,3048.0,5242.0,6343.0,269.7,160.8]},
-  'Callaway ERC Soft':{comp:87.0,price:39.99,u:false,co:0,sa:0,s:[208.3,22.2,2596.0,4154.0,5592.0,269.9,161.4]},
+  'Callaway ERC Soft':{comp:87.0,price:39.99,u:true,co:0,sa:0,s:[208.3,22.2,2596.0,4154.0,5592.0,269.9,161.4]},
   'Callaway Supersoft':{comp:41.0,price:24.99,u:false,co:0,sa:0,s:[206.5,21.5,2334.0,3881.0,5500.0,266.6,160.8]},
   'Callaway Warbird+':{comp:92.0,price:19.99,u:false,co:0,sa:0,s:[209.2,22.5,2611.0,4273.0,5963.0,270.9,161.3]},
-  'Kirkland Signature V3.0':{comp:107.0,price:17.99,u:false,co:0,sa:0,s:[208.0,22.3,2734.0,4861.0,6050.0,271.0,160.5]},
+  'Kirkland Signature V3.0':{comp:107.0,price:17.99,u:true,co:0,sa:0,s:[208.0,22.3,2734.0,4861.0,6050.0,271.0,160.5]},
   'Maxfli SoftFli':{comp:48.0,price:19.99,u:false,co:0,sa:0,s:[204.5,21.4,2484.0,4017.0,5432.0,263.0,159.2]},
   'Maxfli StraightFli':{comp:102.0,price:19.99,u:false,co:0,sa:0,s:[210.0,22.5,2575.0,4530.0,3742.0,270.0,161.3]},
   'Maxfli Tour':{comp:100.0,price:29.99,u:true,co:0,sa:0,s:[208.6,22.6,2705.0,4397.0,5634.0,269.3,160.8]},
@@ -496,7 +496,7 @@ const TG = {
   'Seed SD-15':{comp:64.0,price:29.99,u:false,co:0,sa:0,s:[204.0,21.1,2482.0,4170.0,5667.0,263.5,158.9]},
   'Seed SD-X1':{comp:101.0,price:39.99,u:true,co:0,sa:0,s:[208.0,22.3,2733.0,4418.0,5782.0,270.5,161.1]},
   'Srixon Q-Star (AD333)':{comp:68.0,price:29.99,u:false,co:0,sa:0,s:[204.5,21.3,2649.0,4387.0,5674.0,266.4,159.9]},
-  'Srixon Q-Star Tour':{comp:76.0,price:34.99,u:false,co:0,sa:0,s:[205.5,21.8,2720.0,4568.0,5575.0,267.4,160.5]},
+  'Srixon Q-Star Tour':{comp:76.0,price:34.99,u:true,co:0,sa:0,s:[205.5,21.8,2720.0,4568.0,5575.0,267.4,160.5]},
   'Srixon Soft Feel':{comp:63.0,price:24.99,u:false,co:0,sa:0,s:[204.7,21.8,2546.0,4428.0,5559.0,266.2,158.8]},
   'Srixon UltiSoft':{comp:36.0,price:19.99,u:false,co:0,sa:0,s:[201.9,20.9,2399.0,4168.0,5286.0,262.7,157.8]},
   'Srixon Z-Star':{comp:92.0,price:44.99,u:true,co:0,sa:0,s:[206.6,22.4,2859.0,4937.0,5926.0,269.4,161.1]},
@@ -506,8 +506,8 @@ const TG = {
   'TaylorMade SpeedSoft':{comp:50.0,price:24.99,u:false,co:0,sa:0,s:[204.5,20.9,2383.0,3893.0,5596.0,265.0,160.0]},
   'TaylorMade TP5':{comp:104.0,price:49.99,u:true,co:0,sa:0,s:[208.8,23.1,2911.0,4823.0,6100.0,268.0,162.6]},
   'TaylorMade TP5x':{comp:117.0,price:49.99,u:true,co:0,sa:0,s:[210.3,22.6,2777.0,4609.0,6042.0,272.5,163.6]},
-  'TaylorMade Tour Response':{comp:82.0,price:34.99,u:false,co:0,sa:0,s:[207.7,22.1,2586.0,4249.0,5353.0,268.6,160.5]},
-  'Titleist AVX':{comp:84.0,price:54.99,u:false,co:0,sa:0,s:[208.1,22.3,2606.0,4429.0,5318.0,271.1,160.4]},
+  'TaylorMade Tour Response':{comp:82.0,price:34.99,u:true,co:0,sa:0,s:[207.7,22.1,2586.0,4249.0,5353.0,268.6,160.5]},
+  'Titleist AVX':{comp:84.0,price:54.99,u:true,co:0,sa:0,s:[208.1,22.3,2606.0,4429.0,5318.0,271.1,160.4]},
   'Titleist Pro V1':{comp:98.0,price:54.99,u:true,co:0,sa:0,s:[208.7,22.5,2709.0,4598.0,5692.0,273.2,161.0]},
   'Titleist Pro V1x':{comp:108.0,price:54.99,u:true,co:0,sa:0,s:[208.5,22.4,2717.0,4699.0,5952.0,272.7,159.6]},
   'Titleist Pro V1x Left Dash':{comp:114.0,price:54.99,u:true,co:0,sa:0,s:[208.7,22.1,2575.0,4453.0,5631.0,274.3,160.0]},
@@ -516,13 +516,13 @@ const TG = {
   'Titleist Velocity':{comp:101.0,price:24.99,u:false,co:0,sa:0,s:[208.9,22.2,2467.0,3801.0,5789.0,271.5,160.6]},
   'Vice Drive':{comp:93.0,price:19.99,u:false,co:0,sa:0,s:[207.7,22.2,2545.0,4319.0,5492.0,268.5,160.4]},
   'Vice Pro':{comp:106.0,price:34.99,u:true,co:0,sa:0,s:[208.6,22.8,2759.0,4452.0,5708.0,269.8,160.7]},
-  'Vice Pro Air':{comp:87.0,price:34.99,u:false,co:0,sa:0,s:[206.9,22.3,2668.0,4365.0,5371.0,267.4,160.3]},
+  'Vice Pro Air':{comp:87.0,price:34.99,u:true,co:0,sa:0,s:[206.9,22.3,2668.0,4365.0,5371.0,267.4,160.3]},
   'Vice Pro Plus':{comp:116.0,price:34.99,u:true,co:0,sa:0,s:[208.2,22.8,2848.0,4807.0,6090.0,271.9,160.5]},
-  'Vice Tour':{comp:112.0,price:29.99,u:false,co:0,sa:0,s:[208.3,22.4,2635.0,4216.0,5967.0,271.4,160.8]},
+  'Vice Tour':{comp:112.0,price:29.99,u:true,co:0,sa:0,s:[208.3,22.4,2635.0,4216.0,5967.0,271.4,160.8]},
   'Wilson Duo Soft':{comp:55.0,price:19.99,u:false,co:0,sa:0,s:[203.8,21.1,2540.0,4019.0,5442.0,263.7,158.4]},
   'Wilson Staff Model':{comp:112.0,price:44.99,u:true,co:0,sa:0,s:[209.2,22.5,2703.0,4653.0,5993.0,274.3,161.7]},
   'Wilson Staff Model X':{comp:114.0,price:44.99,u:true,co:0,sa:0,s:[209.8,22.6,2792.0,4782.0,6091.0,273.7,162.2]},
-  'Wilson Triad':{comp:89.0,price:34.99,u:false,co:0,sa:0,s:[205.6,21.8,2707.0,4474.0,5554.0,268.2,159.7]},
+  'Wilson Triad':{comp:89.0,price:34.99,u:true,co:0,sa:0,s:[205.6,21.8,2707.0,4474.0,5554.0,268.2,159.7]},
 };
 
 // TG thresholds (computed from dataset thirds)
@@ -534,11 +534,11 @@ const T_TG_ALL = {
   comp:     {lo:87,    hi:104},
 };
 const T_TG_U = {
-  carry:    {lo:270.5, hi:272.7},
-  height:   {lo:22.0,  hi:22.8},
-  ironSpin: {lo:4609,  hi:4787},
-  wedgeSpin:{lo:5867,  hi:6028},
-  comp:     {lo:94,    hi:112},
+  carry:    {lo:269.3, hi:272.0},
+  height:   {lo:22.3,  hi:22.6},
+  ironSpin: {lo:4474,  hi:4733},
+  wedgeSpin:{lo:5692,  hi:5967},
+  comp:     {lo:99,    hi:112},
 };
 
 // Real MyGolfSpy 2025 robot test data
@@ -636,8 +636,8 @@ function updateHero() {
     metaEl.innerHTML = '<span>37 urethane balls</span><span>·</span><span>2025 MyGolfSpy robot test data</span><span>·</span><span>~2 minutes</span>';
   } else if (TG_FILTER === 'urethane') {
     titleEl.innerHTML = '<em>What Ball?</em>';
-    subEl.textContent = 'Powered by Today\'s Golfer robot test data. Answer 7 quick questions and we\'ll match you to the right tour ball from 27 robot-tested urethane models.';
-    metaEl.innerHTML = '<span>27 urethane tour balls</span><span>·</span><span>Today\'s Golfer robot test data</span><span>·</span><span>~2 minutes</span>';
+    subEl.textContent = 'Powered by Today\'s Golfer robot test data. Answer 7 quick questions and we\'ll match you to the right ball from 38 robot-tested urethane models.';
+    metaEl.innerHTML = '<span>38 urethane balls</span><span>·</span><span>Today\'s Golfer robot test data</span><span>·</span><span>~2 minutes</span>';
   } else {
     titleEl.innerHTML = '<em>What Ball?</em>';
     subEl.textContent = 'Powered by Today\'s Golfer robot test data. Answer 7 quick questions and we\'ll match you to the right ball from 62 models — tour balls, club balls, and everything in between.';

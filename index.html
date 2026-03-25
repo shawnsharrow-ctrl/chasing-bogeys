@@ -236,7 +236,7 @@ body::after {
 <script>
 // Password is hashed so it's not readable in plain source
 // SHA-256 of "Lenny"
-const HASH = 'f59487f42b4b71316ea9af4f6eb1b7741cad0e84b7e74e9cba0c07f9ad22a5a4';
+const HASH = '5c490a6eeb88a68a8b5c936e2fb6df71b2bb5391390c92eef26e5a3e45ac0510';
 
 async function sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));

@@ -595,6 +595,8 @@ function cat(v,lo,hi){return v<lo?'low':v>hi?'high':'mid';}
 function catLbl(c){return{low:'Low',mid:'Mid',high:'High'}[c];}
 function catCls(c){return{low:'cat-low',mid:'cat-mid',high:'cat-high'}[c];}
 function carry(name,spd){const pool=activeBallPool();const d=pool[name];if(!d)return 0;const s=d.s;return spd==='fast'?s[CFI]:spd==='slow'?s[CSI]:s[CI];}
+function ballPrice(b){return b.price!==undefined?b.price:b.p;}
+function ballComp(b){return b.comp!==undefined?b.comp:b.c;}
 
 
 // Dataset state
@@ -691,7 +693,7 @@ function go(n){
   if(el){el.style.display='block';void el.offsetWidth;}
   updateBar(n);
   setCtx(n);
-  window.scrollTo({top:0,behavior:'smooth'});
+  const qw=document.querySelector('.quiz-wrapper');if(qw){const y=qw.getBoundingClientRect().top+window.scrollY-80;window.scrollTo({top:y,behavior:'smooth'});}
 }
 
 function pick(btn){
@@ -745,7 +747,7 @@ function onBallSelect(){
   setS('height',b.s[HI].toFixed(1),cat(b.s[HI],TA.height.lo,TA.height.hi));
   setS('iron',b.s[ISI].toLocaleString(),cat(b.s[ISI],TA.ironSpin.lo,TA.ironSpin.hi));
   setS('wedge',b.s[WSI].toLocaleString(),cat(b.s[WSI],TA.wedgeSpin.lo,TA.wedgeSpin.hi));
-  setS('comp',b.c,cat(b.c,TA.comp.lo,TA.comp.hi));
+  setS('comp',ballComp(b),cat(ballComp(b),TA.comp.lo,TA.comp.hi));
   snap.classList.add('visible');
   document.getElementById('next-2').disabled=false;
 }
@@ -757,7 +759,7 @@ function setCtx(n){
   const msgs={
     3:`Your current ball (${A.ball}): launch height ${b.s[HI].toFixed(1)} ft — ${catLbl(cat(b.s[HI],AT().height.lo,AT().height.hi))} launch`,
     4:`Your current ball (${A.ball}): iron spin ${b.s[ISI].toLocaleString()} rpm — ${catLbl(cat(b.s[ISI],AT().ironSpin.lo,AT().ironSpin.hi))} spin`,
-    5:`Your current ball (${A.ball}): compression ${b.c} — ${catLbl(cat(b.c,AT().comp.lo,AT().comp.hi))} compression`,
+    5:`Your current ball (${A.ball}): compression ${b.c} — ${catLbl(cat(ballComp(b),AT().comp.lo,AT().comp.hi))} compression`,
     6:`Your current ball (${A.ball}): wedge spin ${b.s[WSI].toLocaleString()} rpm — ${catLbl(cat(b.s[WSI],AT().wedgeSpin.lo,AT().wedgeSpin.hi))} greenside spin`,
   };
   const el=document.getElementById('ctx-'+n);
@@ -773,7 +775,7 @@ function findBall(){
   const POOL=activeBallPool();const TA2=AT();
   if(A.ball&&A.ball!=='unlisted'&&POOL[A.ball]){
     const b=POOL[A.ball];
-    cCR=carry(A.ball,spd);cH=b.s[HI];cI=b.s[ISI];cW=b.s[WSI];cC=b.c;
+    cCR=carry(A.ball,spd);cH=b.s[HI];cI=b.s[ISI];cW=b.s[WSI];cC=ballComp(b);
   }else if(A.ball==='unlisted'){
     cCR=260;cH=78.5;cI=6800;cW=9100;cC=80;
     if(S['ul-launch']==='low')cH=75;else if(S['ul-launch']==='high')cH=82;
@@ -793,7 +795,7 @@ function findBall(){
       let sc=0;
       if(A.launch&&cH){const want=A.launch==='higher'?cH+(DS==='mgs'?3:1):A.launch==='lower'?cH-(DS==='mgs'?3:1):cH;sc+=2*(1-Math.min(Math.abs(b.s[HI]-want),DS==='mgs'?6:3)/( DS==='mgs'?6:3));}
       if(A.spin&&cI){const want=A.spin==='more'?cI+500:A.spin==='less'?cI-500:cI;sc+=2*(1-Math.min(Math.abs(b.s[ISI]-want),1500)/1500);}
-      if(!A.feelSkip&&A.feelPref&&cC){const want=A.feelPref==='softer'?cC-15:A.feelPref==='firmer'?cC+15:cC;sc+=1.5*(1-Math.min(Math.abs(b.c-want),40)/40);}
+      if(!A.feelSkip&&A.feelPref&&cC){const want=A.feelPref==='softer'?cC-15:A.feelPref==='firmer'?cC+15:cC;sc+=1.5*(1-Math.min(Math.abs(ballComp(b)-want),40)/40);}
       if(!A.greenSkip&&A.greenPref&&cW){const want=A.greenPref==='more'?cW+500:cW-500;sc+=1.5*(1-Math.min(Math.abs(b.s[WSI]-want),1500)/1500);}
       // Carry as tiebreaker
       const cw=A.spin==='less'?2:1;
@@ -805,7 +807,7 @@ function findBall(){
   function tier(pool,maxP,n){
     const seen=new Set();const out=[];
     for(const r of pool){
-      const isBudget=r.b.p<=39.99;
+      const isBudget=ballPrice(r.b)<=39.99;
       if(maxP!==null&&!isBudget)continue;
       if(maxP===null&&isBudget)continue;
       const brand=r.nm.split(' ')[0];
@@ -823,7 +825,7 @@ function findBall(){
   const sub=A.ball&&A.ball!=='unlisted'?`comparing against your current ball (${A.ball})`:'based on your preferences';
   const dsName = DS==='mgs' ? '37 MyGolfSpy robot-tested urethane balls' : (TG_FILTER==='all' ? '62 Today\'s Golfer robot-tested balls' : '27 Today\'s Golfer urethane balls');
   document.getElementById('results-sub').textContent=`Based on ${dsName} — ${sub}.`;
-  window.scrollTo({top:0,behavior:'smooth'});
+  const qw=document.querySelector('.quiz-wrapper');if(qw){const y=qw.getBoundingClientRect().top+window.scrollY-80;window.scrollTo({top:y,behavior:'smooth'});}
 }
 
 function pills(r,spd){
@@ -832,8 +834,8 @@ function pills(r,spd){
   return`<span class="result-stat-pill pill-carry">${deltaStr}</span>`+
     `<span class="result-stat-pill pill-spin">${catLbl(cat(r.b.s[ISI],AT().ironSpin.lo,AT().ironSpin.hi))} iron spin</span>`+
     `<span class="result-stat-pill pill-height">${catLbl(cat(r.b.s[HI],AT().height.lo,AT().height.hi))} launch</span>`+
-    `<span class="result-stat-pill pill-comp">${catLbl(cat(r.b.c,AT().comp.lo,AT().comp.hi))} feel (${r.b.c})</span>`+
-    `<span class="result-stat-pill pill-price">$${r.b.p.toFixed(2)}/dz</span>`;
+    `<span class="result-stat-pill pill-comp">${catLbl(cat(ballComp(r.b),AT().comp.lo,AT().comp.hi))} feel (${ballComp(r.b)})</span>`+
+    `<span class="result-stat-pill pill-price">$${ballPrice(r.b).toFixed(2)}/dz</span>`;
 }
 
 let cCRGlobal=null;
@@ -853,8 +855,8 @@ function render(pool,elId,label,spd){
     if(A.spin==='less'&&iC==='low')pts.push('low spin for distance');
     if(!A.greenSkip&&A.greenPref==='more'&&wC==='high')pts.push('high wedge spin for bite');
     if(!A.greenSkip&&A.greenPref==='less'&&wC==='low')pts.push('low wedge spin for release');
-    if(!A.feelSkip&&A.feelPref==='softer'&&r.b.c<AT().comp.lo)pts.push(`soft feel (${r.b.c} compression)`);
-    if(!A.feelSkip&&A.feelPref==='firmer'&&r.b.c>AT().comp.hi)pts.push(`firm feel (${r.b.c} compression)`);
+    if(!A.feelSkip&&A.feelPref==='softer'&&ballComp(r.b)<AT().comp.lo)pts.push(`soft feel (${ballComp(r.b)} compression)`);
+    if(!A.feelSkip&&A.feelPref==='firmer'&&ballComp(r.b)>AT().comp.hi)pts.push(`firm feel (${ballComp(r.b)} compression)`);
     if(!pts.length)pts.push('strong all-around match across your stated preferences');
     return pts.join(' · ')+'.';
   }

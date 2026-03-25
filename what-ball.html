@@ -121,6 +121,9 @@ footer { background:var(--green-deep); padding:2rem 3rem; display:flex; justify-
 .footer-links { display:flex; gap:1.5rem; }
 .footer-links a { font-size:.8rem; color:var(--green-light); text-decoration:none; }
 .footer-links a:hover { color:var(--cream); }
+@media(max-width:900px) {
+  #results-columns { grid-template-columns:1fr !important; }
+}
 @media(max-width:640px) {
   nav { padding:0 1.25rem; }
   .nav-links { display:none; }
@@ -436,8 +439,10 @@ footer { background:var(--green-deep); padding:2rem 3rem; display:flex; justify-
     <div class="affiliate-disclosure">
       <strong>Disclosure:</strong> Buy links are affiliate links. If you purchase through them, Chasing Bogeys earns a small commission at no extra cost to you. Recommendations are based purely on independent robot test data (MyGolfSpy or Today's Golfer, per your selection) — commissions never influence results.
     </div>
-    <div id="results-budget"></div>
-    <div id="results-premium"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start" id="results-columns">
+      <div id="results-premium"></div>
+      <div id="results-budget"></div>
+    </div>
     <div class="restart-wrap">
       <button class="btn-restart" onclick="restart()">↺ Start Over</button>
     </div>
@@ -593,6 +598,7 @@ function AT() { return activeThresholds(); }
 
 function cat(v,lo,hi){return v<lo?'low':v>hi?'high':'mid';}
 function catLbl(c){return{low:'Low',mid:'Mid',high:'High'}[c];}
+function feelLbl(c){return{low:'Soft',mid:'Medium',high:'Firm'}[c];}
 function catCls(c){return{low:'cat-low',mid:'cat-mid',high:'cat-high'}[c];}
 function carry(name,spd){const pool=activeBallPool();const d=pool[name];if(!d)return 0;const s=d.s;return spd==='fast'?s[CFI]:spd==='slow'?s[CSI]:s[CI];}
 function ballPrice(b){return b.price!==undefined?b.price:b.p;}
@@ -737,17 +743,18 @@ function onBallSelect(){
   const b=pool[v];if(!b)return;
   const spd=A.spd||'mid';
   const cr=carry(v,spd);
-  function setS(id,val,catStr){
+  function setS(id,val,catStr,type){
     document.getElementById('sn-'+id).textContent=val;
     const c=document.getElementById('sn-'+id+'-c');
-    c.textContent=catLbl(catStr);c.className='snapshot-cat '+catCls(catStr);
+    c.textContent=(type==='feel'?feelLbl:catLbl)(catStr);c.className='snapshot-cat '+catCls(catStr);
   }
+  function setSnap(id,val,catStr,type){setS(id,val,catStr,type);}
   const TA=AT();
   setS('carry',cr.toFixed(1),cat(cr,TA.carry.lo,TA.carry.hi));
   setS('height',b.s[HI].toFixed(1),cat(b.s[HI],TA.height.lo,TA.height.hi));
   setS('iron',b.s[ISI].toLocaleString(),cat(b.s[ISI],TA.ironSpin.lo,TA.ironSpin.hi));
   setS('wedge',b.s[WSI].toLocaleString(),cat(b.s[WSI],TA.wedgeSpin.lo,TA.wedgeSpin.hi));
-  setS('comp',ballComp(b),cat(ballComp(b),TA.comp.lo,TA.comp.hi));
+  setSnap('comp',ballComp(b),cat(ballComp(b),TA.comp.lo,TA.comp.hi),'feel');
   snap.classList.add('visible');
   document.getElementById('next-2').disabled=false;
 }
@@ -759,7 +766,7 @@ function setCtx(n){
   const msgs={
     3:`Your current ball (${A.ball}): launch height ${b.s[HI].toFixed(1)} ft — ${catLbl(cat(b.s[HI],AT().height.lo,AT().height.hi))} launch`,
     4:`Your current ball (${A.ball}): iron spin ${b.s[ISI].toLocaleString()} rpm — ${catLbl(cat(b.s[ISI],AT().ironSpin.lo,AT().ironSpin.hi))} spin`,
-    5:`Your current ball (${A.ball}): compression ${b.c} — ${catLbl(cat(ballComp(b),AT().comp.lo,AT().comp.hi))} compression`,
+    5:`Your current ball (${A.ball}): compression ${b.c} — ${feelLbl(cat(ballComp(b),AT().comp.lo,AT().comp.hi))} feel`,
     6:`Your current ball (${A.ball}): wedge spin ${b.s[WSI].toLocaleString()} rpm — ${catLbl(cat(b.s[WSI],AT().wedgeSpin.lo,AT().wedgeSpin.hi))} greenside spin`,
   };
   const el=document.getElementById('ctx-'+n);
@@ -834,7 +841,7 @@ function pills(r,spd){
   return`<span class="result-stat-pill pill-carry">${deltaStr}</span>`+
     `<span class="result-stat-pill pill-spin">${catLbl(cat(r.b.s[ISI],AT().ironSpin.lo,AT().ironSpin.hi))} iron spin</span>`+
     `<span class="result-stat-pill pill-height">${catLbl(cat(r.b.s[HI],AT().height.lo,AT().height.hi))} launch</span>`+
-    `<span class="result-stat-pill pill-comp">${catLbl(cat(ballComp(r.b),AT().comp.lo,AT().comp.hi))} feel (${ballComp(r.b)})</span>`+
+    `<span class="result-stat-pill pill-comp">${feelLbl(cat(ballComp(r.b),AT().comp.lo,AT().comp.hi))} feel (${ballComp(r.b)})</span>`+
     `<span class="result-stat-pill pill-price">$${ballPrice(r.b).toFixed(2)}/dz</span>`;
 }
 
@@ -855,8 +862,8 @@ function render(pool,elId,label,spd){
     if(A.spin==='less'&&iC==='low')pts.push('low spin for distance');
     if(!A.greenSkip&&A.greenPref==='more'&&wC==='high')pts.push('high wedge spin for bite');
     if(!A.greenSkip&&A.greenPref==='less'&&wC==='low')pts.push('low wedge spin for release');
-    if(!A.feelSkip&&A.feelPref==='softer'&&ballComp(r.b)<AT().comp.lo)pts.push(`soft feel (${ballComp(r.b)} compression)`);
-    if(!A.feelSkip&&A.feelPref==='firmer'&&ballComp(r.b)>AT().comp.hi)pts.push(`firm feel (${ballComp(r.b)} compression)`);
+    if(!A.feelSkip&&A.feelPref==='softer'&&ballComp(r.b)<AT().comp.lo)pts.push(`soft feel (compression ${ballComp(r.b)})`);
+    if(!A.feelSkip&&A.feelPref==='firmer'&&ballComp(r.b)>AT().comp.hi)pts.push(`firm feel (compression ${ballComp(r.b)})`);
     if(!pts.length)pts.push('strong all-around match across your stated preferences');
     return pts.join(' · ')+'.';
   }

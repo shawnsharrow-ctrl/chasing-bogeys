@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — Chasing Bogeys</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --green-deep:#1a3a2a;--green-mid:#2d5a3d;--green-bright:#4a8c5c;
+  --green-light:#a8d5b5;--cream:#f5f0e8;--cream-dark:#e8e0d0;
+  --gold:#c8952a;--gold-light:#e8b84b;--white:#fefefe;
+  --text-dark:#1a1a18;--text-mid:#3d3d38;--text-muted:#7a7a72;--red:#c0392b;
+  --serif:'Playfair Display',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;
+}
+html,body{min-height:100%;font-family:var(--sans);background:var(--cream);color:var(--text-dark);}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--green-deep);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:60px;border-bottom:1px solid rgba(200,149,42,.25);}
+.nav-logo{font-family:var(--serif);font-size:1.15rem;color:var(--cream);text-decoration:none;}
+.nav-logo em{color:var(--gold-light);font-style:italic;}
+.page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:5rem 1.5rem 3rem;}
+.card{background:var(--white);border:1px solid var(--cream-dark);border-radius:12px;width:100%;max-width:520px;padding:2.5rem;}
+.card-title{font-family:var(--serif);font-size:1.75rem;color:var(--green-deep);margin-bottom:.4rem;}
+.card-sub{font-size:.875rem;font-weight:300;color:var(--text-muted);margin-bottom:2rem;line-height:1.6;}
+.form-group{margin-bottom:1.1rem;}
+.form-label{font-size:.78rem;font-weight:500;color:var(--text-mid);display:block;margin-bottom:.35rem;letter-spacing:.02em;}
+.form-label span{color:var(--text-muted);font-weight:300;}
+.form-input{width:100%;padding:.7rem 1rem;font-family:var(--sans);font-size:.92rem;color:var(--text-dark);background:var(--cream);border:1.5px solid var(--cream-dark);border-radius:7px;transition:border-color .15s;}
+.form-input:focus{outline:none;border-color:var(--green-mid);background:var(--white);}
+select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a7a72' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.section-divider{font-size:.7rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:1.75rem 0 1rem;padding-top:1.25rem;border-top:1px solid var(--cream-dark);}
+.btn-primary{display:block;width:100%;background:var(--green-deep);color:var(--cream);border:none;padding:.85rem;border-radius:7px;font-family:var(--sans);font-size:.95rem;font-weight:500;cursor:pointer;transition:all .18s;margin-top:1.5rem;}
+.btn-primary:hover{background:var(--green-mid);transform:translateY(-1px);}
+.toggle-link{text-align:center;margin-top:1.25rem;font-size:.85rem;color:var(--text-muted);}
+.toggle-link a{color:var(--green-mid);cursor:pointer;text-decoration:underline;}
+.error-msg{background:#fef2f2;border:1px solid #fecaca;color:var(--red);font-size:.82rem;padding:.65rem 1rem;border-radius:6px;margin-bottom:1rem;display:none;}
+.success-msg{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:.82rem;padding:.65rem 1rem;border-radius:6px;margin-bottom:1rem;display:none;}
+.step-indicator{display:flex;gap:.5rem;margin-bottom:2rem;}
+.step-dot{width:8px;height:8px;border-radius:50%;background:var(--cream-dark);transition:background .2s;}
+.step-dot.active{background:var(--gold);}
+.step-dot.done{background:var(--green-bright);}
+.option-pill{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem .9rem;border:1.5px solid var(--cream-dark);border-radius:20px;font-size:.82rem;cursor:pointer;transition:all .15s;background:var(--cream);color:var(--text-mid);margin:.25rem;}
+.option-pill:hover{border-color:var(--green-bright);}
+.option-pill.selected{background:var(--green-deep);border-color:var(--green-deep);color:var(--cream);}
+.pill-group{display:flex;flex-wrap:wrap;margin-bottom:.5rem;}
+.backend-note{background:var(--cream);border:1px solid var(--cream-dark);border-left:3px solid var(--gold);border-radius:6px;padding:.85rem 1rem;font-size:.78rem;color:var(--text-muted);line-height:1.6;margin-top:1rem;}
+.backend-note strong{color:var(--text-mid);}
+@media(max-width:540px){.form-row{grid-template-columns:1fr;}.card{padding:1.75rem 1.25rem;}}
+</style>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.co', 'sb_publishable_Ce3y0LklIDpmH4SUhPcRTQ_mADVHltd');
+</script>
+</head>
+<body>
+
+<nav>
+  <a href="home.html" class="nav-logo">Chasing <em>Bogeys</em></a>
+</nav>
+
+<div class="page">
+  <div class="card">
+
+    <!-- ── SIGN IN ─────────────────────────────── -->
+    <div id="view-signin">
+      <h1 class="card-title">Welcome back</h1>
+      <p class="card-sub">Sign in to access your Home Course Tracker and player profile.</p>
+      <div class="error-msg" id="signin-error"></div>
+      <div class="form-group">
+        <label class="form-label">Username or Email</label>
+        <input class="form-input" type="text" id="signin-user" placeholder="Username or email address" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="signin-pw" placeholder="Your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')signIn()">
+      </div>
+      <button class="btn-primary" onclick="signIn()">Sign In →</button>
+      <div class="toggle-link">Don't have an account? <a onclick="show('view-register')">Create one</a></div>
+
+    </div>
+
+    <!-- ── REGISTER STEP 1: Account ──────────────── -->
+    <div id="view-register" style="display:none">
+      <div class="step-indicator">
+        <div class="step-dot active" id="dot-1"></div>
+        <div class="step-dot" id="dot-2"></div>
+        <div class="step-dot" id="dot-3"></div>
+      </div>
+      <h1 class="card-title">Create your account</h1>
+      <p class="card-sub">Step 1 of 3 — Account details</p>
+      <div class="error-msg" id="reg1-error"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">First Name</label>
+          <input class="form-input" type="text" id="reg-first" placeholder="Shawn" autocomplete="given-name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name</label>
+          <input class="form-input" type="text" id="reg-last" placeholder="Smith" autocomplete="family-name">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-input" type="text" id="reg-username" placeholder="e.g. ChasingBogeys" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input class="form-input" type="email" id="reg-email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="reg-pw" placeholder="At least 8 characters" autocomplete="new-password">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm Password</label>
+        <input class="form-input" type="password" id="reg-pw2" placeholder="Repeat password" autocomplete="new-password">
+      </div>
+      <button class="btn-primary" onclick="regStep1()">Continue →</button>
+      <div class="toggle-link">Already have an account? <a onclick="show('view-signin')">Sign in</a></div>
+    </div>
+
+    <!-- ── REGISTER STEP 2: Golf Profile ─────────── -->
+    <div id="view-profile" style="display:none">
+      <div class="step-indicator">
+        <div class="step-dot done" id="dot-1b"></div>
+        <div class="step-dot active" id="dot-2b"></div>
+        <div class="step-dot" id="dot-3b"></div>
+      </div>
+      <h1 class="card-title">Your golf profile</h1>
+      <p class="card-sub">Step 2 of 3 — Help us personalize your experience. All fields are optional.</p>
+
+      <div class="form-group">
+        <label class="form-label">Current Handicap Index <span>(optional)</span></label>
+        <input class="form-input" type="number" id="prof-hcp" placeholder="e.g. 14.2" step="0.1" min="0" max="54">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Ball You Typically Play <span>(optional)</span></label>
+        <select class="form-input" id="prof-ball">
+          <option value="">— Select a ball —</option>
+          <option>Titleist Pro V1</option><option>Titleist Pro V1x</option>
+          <option>Titleist AVX</option><option>Titleist Tour Soft</option>
+          <option>TaylorMade TP5</option><option>TaylorMade TP5x</option>
+          <option>TaylorMade Tour Response</option>
+          <option>Callaway Chrome Soft</option><option>Callaway Chrome Tour</option>
+          <option>Callaway Chrome Tour X</option><option>Callaway ERC Soft</option>
+          <option>Srixon Z-STAR</option><option>Srixon Z-STAR XV</option>
+          <option>Srixon Z-STAR DIAMOND</option><option>Srixon Q-STAR TOUR</option>
+          <option>Bridgestone TOUR B RX</option><option>Bridgestone TOUR B RXS</option>
+          <option>Bridgestone TOUR B X</option><option>Bridgestone TOUR B XS</option>
+          <option>Mizuno Pro S</option><option>Mizuno Pro X</option>
+          <option>Vice Pro</option><option>Vice Pro Plus</option><option>Vice Pro Air</option>
+          <option>Maxfli Tour</option><option>Maxfli Tour S</option><option>Maxfli Tour X</option>
+          <option>Wilson Staff Model</option><option>Wilson Staff Model X</option>
+          <option>PXG Xtreme Tour</option><option>PXG Xtreme Tour X</option>
+          <option>Kirkland Performance+ v3.5</option>
+          <option>Member's Mark Pro Series 2</option>
+          <option value="other">Other / Not listed</option>
+        </select>
+      </div>
+
+      <div class="section-divider">Home Course Tracker Settings</div>
+
+      <div class="form-group">
+        <label class="form-label">What counts as a blow-up hole for you?</label>
+        <div class="pill-group" id="blowup-pills">
+          <button class="option-pill" data-val="2" onclick="selectPill(this,'blowup-pills')">Double bogey (+2)</button>
+          <button class="option-pill selected" data-val="3" onclick="selectPill(this,'blowup-pills')">Triple bogey (+3)</button>
+          <button class="option-pill" data-val="4" onclick="selectPill(this,'blowup-pills')">Quad bogey (+4)</button>
+          <button class="option-pill" data-val="dp" onclick="selectPill(this,'blowup-pills')">Double par</button>
+        </div>
+        <p style="font-size:.72rem;color:var(--text-muted);margin-top:.35rem;">This sets your blow-up threshold in the Home Course Tracker stats.</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Pitch shot threshold <span>(yards — anything under this is a pitch)</span></label>
+        <input class="form-input" type="number" id="prof-pitch" value="100" min="30" max="200">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Chip shot threshold <span>(yards — anything under this is a chip)</span></label>
+        <input class="form-input" type="number" id="prof-chip" value="25" min="5" max="60">
+      </div>
+
+      <button class="btn-primary" onclick="regStep2()">Continue →</button>
+    </div>
+
+    <!-- ── REGISTER STEP 3: Confirm ──────────────── -->
+    <div id="view-confirm" style="display:none">
+      <div class="step-indicator">
+        <div class="step-dot done"></div>
+        <div class="step-dot done"></div>
+        <div class="step-dot active"></div>
+      </div>
+      <h1 class="card-title">You're all set</h1>
+      <p class="card-sub">Step 3 of 3 — Review and create your account.</p>
+      <div class="success-msg" id="confirm-success" style="display:block;">
+        Almost there! Review your details and click Create Account. You'll receive a confirmation email — click the link in it to activate your account.
+      </div>
+      <div id="confirm-summary" style="background:var(--cream);border-radius:8px;padding:1.25rem;margin-bottom:1.5rem;font-size:.88rem;line-height:1.8;color:var(--text-mid);"></div>
+      <button class="btn-primary" onclick="createAccount()">Create Account →</button>
+      <div class="toggle-link"><a onclick="show('view-profile')">← Back to profile</a></div>
+    </div>
+
+    <!-- ── SUCCESS ────────────────────────────────── -->
+    <div id="view-success" style="display:none;text-align:center;">
+      <div style="font-size:3rem;margin-bottom:1rem;">⛳</div>
+      <h1 class="card-title" style="text-align:center;">Account created!</h1>
+      <p class="card-sub" style="text-align:center;">Welcome to Chasing Bogeys. Your profile has been saved and a confirmation email is on its way.</p>
+      <a href="home.html" class="btn-primary" style="text-decoration:none;text-align:center;display:block;">Go to the site →</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let regData = {};
+
+function show(viewId) {
+  ['view-signin','view-register','view-profile','view-confirm','view-success'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.style.display = id === viewId ? '' : 'none';
+  });
+}
+
+async function signIn() {
+  const user = document.getElementById('signin-user').value.trim();
+  const pw   = document.getElementById('signin-pw').value;
+  if (!user || !pw) { showError('signin-error','Please enter your username and password.'); return; }
+
+  // Resolve username to email if needed
+  let email = user;
+  if (!user.includes('@')) {
+    // Look up email by username
+    const { data, error } = await _supabase
+      .from('profiles')
+      .select('id')
+      .eq('username', user)
+      .single();
+    if (error || !data) { showError('signin-error','Username not found.'); return; }
+    // Get email from auth — not directly accessible, so sign in with username as email fallback
+    showError('signin-error','Please sign in with your email address.');
+    return;
+  }
+
+  const { data, error } = await _supabase.auth.signInWithPassword({ email, password: pw });
+  if (error) { showError('signin-error', error.message); return; }
+  // Success — redirect to home
+  window.location.href = 'home.html';
+}
+
+function regStep1() {
+  const first    = document.getElementById('reg-first').value.trim();
+  const last     = document.getElementById('reg-last').value.trim();
+  const username = document.getElementById('reg-username').value.trim();
+  const email    = document.getElementById('reg-email').value.trim();
+  const pw       = document.getElementById('reg-pw').value;
+  const pw2      = document.getElementById('reg-pw2').value;
+
+  if (!first||!last) { showError('reg1-error','Please enter your first and last name.'); return; }
+  if (!username)      { showError('reg1-error','Please choose a username.'); return; }
+  if (!email||!email.includes('@')) { showError('reg1-error','Please enter a valid email address.'); return; }
+  if (pw.length < 8)  { showError('reg1-error','Password must be at least 8 characters.'); return; }
+  if (pw !== pw2)     { showError('reg1-error','Passwords do not match.'); return; }
+
+  regData = { first, last, username, email };
+  hideError('reg1-error');
+  show('view-profile');
+}
+
+function regStep2() {
+  regData.hcp      = document.getElementById('prof-hcp').value || null;
+  regData.ball     = document.getElementById('prof-ball').value || null;
+  regData.blowup   = document.querySelector('#blowup-pills .option-pill.selected')?.dataset.val || '3';
+  regData.pitchYds = document.getElementById('prof-pitch').value || 100;
+  regData.chipYds  = document.getElementById('prof-chip').value || 25;
+
+  // Build summary
+  const rows = [
+    ['Name',      `${regData.first} ${regData.last}`],
+    ['Username',  regData.username],
+    ['Email',     regData.email],
+    ['Handicap',  regData.hcp || 'Not set'],
+    ['Gamer ball',regData.ball || 'Not set'],
+    ['Blow-up at',{2:'Double bogey',3:'Triple bogey',4:'Quad bogey',dp:'Double par'}[regData.blowup]||'Triple bogey'],
+    ['Pitch threshold', `Under ${regData.pitchYds} yards`],
+    ['Chip threshold',  `Under ${regData.chipYds} yards`],
+  ];
+  document.getElementById('confirm-summary').innerHTML =
+    rows.map(([k,v]) => `<div style="display:flex;gap:1rem;"><span style="color:var(--text-muted);min-width:130px;">${k}</span><span style="font-weight:500;">${v}</span></div>`).join('');
+
+  show('view-confirm');
+}
+
+async function createAccount() {
+  const pw = document.getElementById('reg-pw').value;
+
+  // Sign up with Supabase Auth — profile is auto-created by the database trigger
+  const { data, error } = await _supabase.auth.signUp({
+    email: regData.email,
+    password: pw,
+    options: {
+      data: {
+        username:   regData.username,
+        first_name: regData.first,
+        last_name:  regData.last,
+      }
+    }
+  });
+
+  if (error) { showError('confirm-success',''); document.getElementById('confirm-success').style.background='#fef2f2'; document.getElementById('confirm-success').style.color='#c0392b'; document.getElementById('confirm-success').textContent = error.message; return; }
+
+  // Update profile with golf-specific data
+  if (data.user) {
+    await _supabase.from('profiles').update({
+      handicap:         regData.hcp ? parseFloat(regData.hcp) : null,
+      gamer_ball:       regData.ball || null,
+      blowup_threshold: regData.blowup || 'triple',
+      pitch_yards:      parseInt(regData.pitchYds) || 100,
+      chip_yards:       parseInt(regData.chipYds)  || 25,
+    }).eq('id', data.user.id);
+  }
+
+  show('view-success');
+}
+
+function selectPill(btn, groupId) {
+  document.querySelectorAll(`#${groupId} .option-pill`).forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  if(el){ el.textContent = msg; el.style.display = 'block'; }
+}
+function hideError(id) {
+  const el = document.getElementById(id);
+  if(el) el.style.display = 'none';
+}
+</script>
+</body>
+</html>

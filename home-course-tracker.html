@@ -441,6 +441,12 @@ footer { background: var(--green-deep); padding: 1.5rem 2rem; display: flex; jus
 .sc-pen { color: var(--red); font-size: 0.7rem; }
 
 </style>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.co', 'sb_publishable_Ce3y0LklIDpmH4SUhPcRTQ_mADVHltd');
+</script>
 </head>
 <body>
 
@@ -976,21 +982,21 @@ function loadSampleData() {
     rating:71.8, slope:127, par:72, holes:18,
     isComplex:true, complexName:'Avalon Golf Links', complexId:'avalon',
     nines:['North','West'],
-    holePars:[4,3,5,4,4,3,5,4,4, 4,4,5,3,4,4,3,5,4]
+    holePars:[4,3,5,4,3,5,4,3,5, 4,4,4,3,4,5,3,5,4]
   };
   const avalon_ws = {
     id:'avalon_ws', name:'West / South', location:'Burlington, WA',
     rating:70.9, slope:124, par:72, holes:18,
     isComplex:true, complexName:'Avalon Golf Links', complexId:'avalon',
     nines:['West','South'],
-    holePars:[4,4,5,3,4,4,3,5,4, 4,3,5,4,4,3,5,4,4]
+    holePars:[4,4,4,3,4,5,3,5,4, 4,4,4,3,4,5,3,5,4]
   };
   const avalon_sn = {
     id:'avalon_sn', name:'South / North', location:'Burlington, WA',
     rating:71.2, slope:125, par:72, holes:18,
     isComplex:true, complexName:'Avalon Golf Links', complexId:'avalon',
     nines:['South','North'],
-    holePars:[4,3,5,4,4,3,5,4,4, 4,3,5,4,4,3,5,4,4]
+    holePars:[4,4,4,3,4,5,3,5,4, 4,3,5,4,3,5,4,3,5]
   };
   state.courses = [avalon_nw, avalon_ws, avalon_sn];
 
@@ -1578,22 +1584,105 @@ function buildScorecard(course) {
   const body = document.getElementById('round-scorecard-body');
   const foot = document.getElementById('round-scorecard-foot');
   const nines = course.nines || ['Front','Back'];
-  let html = '';
-  course.holePars.forEach((par,i) => {
-    if (i===0) html += `<tr><td colspan="7" style="font-size:0.7rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--cream-dark);padding:0.3rem 0.5rem;">${nines[0]||'Front'} Nine</td></tr>`;
-    if (i===9 && course.holes===18) html += `<tr><td colspan="7" style="font-size:0.7rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--cream-dark);padding:0.3rem 0.5rem;">${nines[1]||'Back'} Nine</td></tr>`;
-    html += `<tr>
-      <td>Hole ${i+1} · Par ${par}</td>
-      <td></td>
-      <td><input class="score-input" type="number" id="sc-score-${i}" min="1" max="15" placeholder="${par}" oninput="updateScorecardTotal()"></td>
-      <td><input class="putt-input" type="number" id="sc-putts-${i}" min="0" max="6" placeholder="2"></td>
-      <td><button class="penalty-mini-btn" id="pen-btn-${i}" onclick="openPenaltyModal(${i})">+</button></td>
-      <td><input class="putt-input" type="number" id="sc-chips-${i}" min="0" max="5" placeholder="0"></td>
-      <td><input class="putt-input" type="number" id="sc-pitches-${i}" min="0" max="5" placeholder="0"></td>
+
+  // Build horizontal scorecard — holes as columns, fields as rows
+  // Tab order goes down each hole (score→pitches→chips→putts) before next hole
+  const holes = course.holePars;
+  const rows = ['Score','Pitches','Chips','Putts','Penalty ★'];
+  const fields = ['score','pitches','chips','putts','penalty'];
+
+  // Calculate tabindex so tabbing goes DOWN a hole before moving right
+  // hole 1: score=1, pitches=2, chips=3, putts=4, penalty=5
+  // hole 2: score=6, pitches=7, chips=8, putts=9, penalty=10, etc.
+  function tabIdx(holeIdx, rowIdx) { return holeIdx * 5 + rowIdx + 1; }
+
+  function buildNineTable(nineHoles, nineLabel, holeOffset) {
+    const holeNums = nineHoles.map((_,i) => i + holeOffset + 1);
+    const pars = nineHoles;
+    const outLabel = holeOffset === 0 ? 'OUT' : 'IN';
+    const outPar = pars.reduce((a,b)=>a+b,0);
+
+    let headerRow = `<tr>
+      <th style="text-align:left;background:var(--green-deep);color:var(--green-light);font-size:.7rem;letter-spacing:.08em;width:72px;">${nineLabel}</th>
+      ${holeNums.map(n=>`<th>${n}</th>`).join('')}
+      <th style="background:var(--green-mid);">${outLabel}</th>
     </tr>`;
-  });
+
+    let parRow = `<tr style="background:var(--cream);">
+      <td style="font-size:.72rem;color:var(--text-muted);font-weight:500;">Par</td>
+      ${pars.map(p=>`<td style="text-align:center;font-size:.82rem;color:var(--text-muted);">${p}</td>`).join('')}
+      <td style="text-align:center;font-weight:600;background:var(--cream);">${outPar}</td>
+    </tr>`;
+
+    let dataRows = rows.map((label, rowIdx) => {
+      const field = fields[rowIdx];
+      const cells = nineHoles.map((par, holeIdx) => {
+        const absIdx = holeOffset + holeIdx;
+        if (field === 'penalty') {
+          return `<td style="text-align:center;padding:.2rem .3rem;">
+            <button class="penalty-mini-btn" id="pen-btn-${absIdx}" tabindex="${tabIdx(absIdx,rowIdx)}" onclick="openPenaltyModal(${absIdx})">+</button>
+          </td>`;
+        }
+        const inputType = field === 'score' ? 'number' : 'number';
+        const placeholder = field === 'score' ? String(par) : '0';
+        const cls = field === 'score' ? 'score-input' : 'putt-input';
+        const extra = field === 'score' ? 'oninput="updateScorecardTotal()"' : '';
+        return `<td style="text-align:center;padding:.2rem .3rem;">
+          <input class="${cls}" type="number" id="sc-${field}-${absIdx}" min="0" max="${field==='score'?15:9}" placeholder="${placeholder}" tabindex="${tabIdx(absIdx,rowIdx)}" ${extra}>
+        </td>`;
+      });
+      // OUT column — totals for score row only
+      const outCell = field === 'score'
+        ? `<td style="text-align:center;font-weight:600;background:var(--cream);font-size:.9rem;" id="sc-out-${holeOffset}">&mdash;</td>`
+        : `<td style="background:var(--cream);"></td>`;
+      return `<tr>
+        <td style="font-size:.72rem;font-weight:500;color:var(--text-muted);padding:.3rem .5rem;">${label}</td>
+        ${cells.join('')}
+        ${outCell}
+      </tr>`;
+    }).join('');
+
+    return `<table style="width:100%;border-collapse:collapse;margin-bottom:1rem;table-layout:fixed;">
+      <thead>${headerRow}</thead>
+      <tbody>${parRow}${dataRows}</tbody>
+    </table>`;
+  }
+
+  const front = holes.slice(0,9);
+  const back  = course.holes === 18 ? holes.slice(9,18) : [];
+
+  let html = buildNineTable(front, nines[0]||'Front', 0);
+  if (back.length) html += buildNineTable(back, nines[1]||'Back', 9);
+
   body.innerHTML = html;
-  foot.innerHTML = `<tr style="background:var(--cream);"><td style="font-weight:500;padding:0.5rem;font-size:0.82rem;">Total</td><td></td><td style="text-align:center;font-weight:500;font-size:1rem;color:var(--green-deep);" id="sc-total">—</td><td colspan="4"></td></tr>`;
+  foot.innerHTML = '';
+
+  // Update out totals on input
+  document.querySelectorAll('.score-input').forEach(inp => {
+    inp.addEventListener('input', updateAllTotals);
+  });
+}
+
+function updateAllTotals() {
+  // Front nine out
+  let frontSum = 0, frontCount = 0;
+  for (let i=0;i<9;i++) {
+    const v = parseInt(document.getElementById('sc-score-'+i)?.value);
+    if(!isNaN(v)){frontSum+=v;frontCount++;}
+  }
+  const frontOut = document.getElementById('sc-out-0');
+  if(frontOut) frontOut.textContent = frontCount ? frontSum : '—';
+
+  // Back nine out
+  let backSum = 0, backCount = 0;
+  for (let i=9;i<18;i++) {
+    const v = parseInt(document.getElementById('sc-score-'+i)?.value);
+    if(!isNaN(v)){backSum+=v;backCount++;}
+  }
+  const backOut = document.getElementById('sc-out-9');
+  if(backOut) backOut.textContent = backCount ? backSum : '—';
+
+  updateScorecardTotal();
 }
 
 function updateScorecardTotal() {
@@ -1602,7 +1691,8 @@ function updateScorecardTotal() {
     const v = parseInt(inp.value);
     if (!isNaN(v)) { sum+=v; count++; }
   });
-  document.getElementById('sc-total').textContent = count ? sum : '—';
+  const totalEl = document.getElementById('sc-total');
+  if(totalEl) totalEl.textContent = count ? sum : '—';
 }
 
 function openPenaltyModal(holeIdx) {
@@ -1638,11 +1728,11 @@ function saveRound() {
   const date = document.getElementById('round-date').value;
   const course = state.courses.find(c=>c.id===courseId);
   if (!course || !date) { alert('Please select a course and date.'); return; }
-  const scores = course.holePars.map((_,i)=>parseInt(document.getElementById(`sc-score-${i}`)?.value)||0);
+  const scores = course.holePars.map((_,i)=>parseInt(document.getElementById('sc-score-'+i)?.value)||0);
   if (scores.some(s=>s===0)) { if (!confirm('Some holes have no score entered. Save anyway?')) return; }
-  const putts = course.holePars.map((_,i)=>parseInt(document.getElementById(`sc-putts-${i}`)?.value)||0);
-  const chips = course.holePars.map((_,i)=>parseInt(document.getElementById(`sc-chips-${i}`)?.value)||0);
-  const pitches = course.holePars.map((_,i)=>parseInt(document.getElementById(`sc-pitches-${i}`)?.value)||0);
+  const putts = course.holePars.map((_,i)=>parseInt(document.getElementById('sc-putts-'+i)?.value)||0);
+  const chips = course.holePars.map((_,i)=>parseInt(document.getElementById('sc-chips-'+i)?.value)||0);
+  const pitches = course.holePars.map((_,i)=>parseInt(document.getElementById('sc-pitches-'+i)?.value)||0);
   const penalties = Object.values(pendingPenalties);
   const journal = {
     tee: document.getElementById('j-tee')?.value||'',
@@ -1651,8 +1741,10 @@ function saveRound() {
     notes: document.getElementById('j-notes')?.value||'',
     share: document.getElementById('j-share')?.checked||false
   };
-  state.rounds.push({ id:'r'+Date.now(), courseId, date, scores, putts, chips, pitches, penalties, journal });
+  const newRound = { id:'r'+Date.now(), courseId, date, scores, putts, chips, pitches, penalties, journal };
+  state.rounds.push(newRound);
   saveState();
+  saveRoundToSupabase(newRound);
   closeModal('enter-round-modal');
   renderAll();
 }
@@ -1692,6 +1784,7 @@ function saveCourse() {
   state.courses.push(course);
   state.activeCourseId = course.id;
   saveState();
+  saveCourseToSupabase(course);
   closeModal('add-course-modal');
   renderAll();
 }
@@ -1749,11 +1842,93 @@ function renderAll() {
 // ════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════
+
+// Check auth session and load user data from Supabase
+async function initApp() {
+  const { data: { session } } = await _supabase.auth.getSession();
+
+  if (session) {
+    // Logged in — load data from Supabase
+    state.userId = session.user.id;
+    await loadFromSupabase();
+  } else {
+    // Not logged in — fall back to localStorage demo data
+    loadState();
+    loadSampleData();
+  }
+  renderAll();
+}
+
+async function loadFromSupabase() {
+  // Load courses
+  const { data: courses } = await _supabase
+    .from('courses')
+    .select('*')
+    .order('created_at');
+  if (courses && courses.length) {
+    state.courses = courses.map(c => ({
+      id: c.id, name: c.name, location: c.location,
+      rating: c.rating, slope: c.slope, par: c.par, holes: c.holes,
+      holePars: c.hole_pars, isComplex: c.is_complex,
+      complexName: c.complex_name, complexId: c.complex_id,
+      nines: c.nine_labels || ['Front','Back']
+    }));
+    if (state.courses.length) state.activeCourseId = state.courses[0].id;
+  }
+
+  // Load rounds
+  const { data: rounds } = await _supabase
+    .from('rounds')
+    .select('*')
+    .order('played_at');
+  if (rounds && rounds.length) {
+    state.rounds = rounds.map(r => ({
+      id: r.id, courseId: r.course_id, date: r.played_at,
+      scores: r.scores, putts: r.putts || [], chips: r.chips || [],
+      pitches: r.pitches || [], penalties: r.penalties || [],
+      journal: { tee: r.journal_tee, approach: r.journal_approach,
+                 short: r.journal_short, notes: r.journal_notes, share: r.journal_share }
+    }));
+  }
+}
+
+// Override saveState to sync with Supabase when logged in
+const _origSaveState = saveState;
+
+async function saveRoundToSupabase(round) {
+  const { data: { session } } = await _supabase.auth.getSession();
+  if (!session) return;
+  const course = state.courses.find(c => c.id === round.courseId);
+  await _supabase.from('rounds').upsert({
+    id: round.id, user_id: session.user.id,
+    course_id: round.courseId, played_at: round.date,
+    scores: round.scores, putts: round.putts, chips: round.chips,
+    pitches: round.pitches, penalties: round.penalties,
+    journal_tee: round.journal?.tee, journal_approach: round.journal?.approach,
+    journal_short: round.journal?.short, journal_notes: round.journal?.notes,
+    journal_share: round.journal?.share || false,
+  });
+}
+
+async function saveCourseToSupabase(course) {
+  const { data: { session } } = await _supabase.auth.getSession();
+  if (!session) return;
+  await _supabase.from('courses').upsert({
+    id: course.id, user_id: session.user.id,
+    name: course.name, location: course.location,
+    rating: course.rating, slope: course.slope,
+    par: course.par, holes: course.holes,
+    hole_pars: course.holePars, is_complex: course.isComplex,
+    complex_name: course.complexName, complex_id: course.complexId,
+    nine_labels: course.nines,
+  });
+}
+
 loadState();
 loadSampleData();
 // Set today's date
 document.getElementById('round-date') && (document.getElementById('round-date').value = new Date().toISOString().split('T')[0]);
-renderAll();
+initApp();
 </script>
 </body>
 </html>

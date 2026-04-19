@@ -87,12 +87,12 @@
 
   /* ── HERO ── */
   .hero {
-    min-height: 100vh;
+    min-height: auto;
     background: var(--green-deep);
     display: grid;
     grid-template-columns: 1fr 1fr;
     align-items: center;
-    padding: 8rem 3rem 4rem;
+    padding: 5rem 3rem 3rem;
     position: relative;
     overflow: hidden;
   }
@@ -552,6 +552,12 @@
     .footer-bottom { flex-direction: column; gap: 0.5rem; padding: 1rem 1.5rem; text-align: center; }
   }
 </style>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.co', 'sb_publishable_Ce3y0LklIDpmH4SUhPcRTQ_mADVHltd');
+</script>
 </head>
 <body>
 
@@ -562,6 +568,7 @@
     <li><a href="#tools">Tools</a></li>
     <li><a href="#blog">Blog</a></li>
     <li><a href="#about">About</a></li>
+    <li><a href="register.html">Sign In</a></li>
     <li><a href="#tools" class="nav-cta">Get Started</a></li>
   </ul>
 </nav>
@@ -575,7 +582,7 @@
       <em>the rest of us</em>
     </h1>
     <p class="hero-sub">
-      Bogeys are good. Great, even. Chasing Bogeys is your companion on the journey — honest tools, honest talk, from a golfer still figuring it out right alongside you.
+      Whether you are trying to break 100 for the first time or a scratch golfer trying to scramble after a rare errant tee shot, sometimes it's important to remember — Bogeys are good.
     </p>
     <div class="hero-actions">
       <a href="#tools" class="btn-primary">Explore the Tools</a>
@@ -624,15 +631,7 @@
   </div>
 </section>
 
-<!-- PHILOSOPHY -->
-<div class="philosophy">
-  <blockquote class="philosophy-quote">
-    "A bogey on every hole is a 90. That's not failure — that's a goal worth chasing."
-  </blockquote>
-  <p class="philosophy-text">
-    Most golf content is written by scratch players for scratch players. We built Chasing Bogeys for the 80% of golfers who will never break 80 — and are perfectly happy about that. Our tools and writing are grounded in where you actually are, not where a 2-handicapper imagines you should be.
-  </p>
-</div>
+
 
 <!-- TOOLS -->
 <section class="tools" id="tools">
@@ -645,7 +644,7 @@
       <div class="tool-icon">⛳</div>
       <span class="tool-tag">Free Tool</span>
       <h3 class="tool-name">What Ball?</h3>
-      <p class="tool-desc">Answer 7 quick questions about your game and we'll recommend the best ball for your swing speed, feel preference, and budget — from 37 robot-tested urethane balls.</p>
+      <p class="tool-desc">Answer a few quick questions and we'll recommend a few balls that will fit your game, based on publicly available robot testing data from multiple sources.</p>
       <div class="tool-link">Find my ball</div>
     </a>
 
@@ -700,7 +699,7 @@
 </section>
 
 <!-- ABOUT -->
-<section id="about" style="background:var(--white); display:grid; grid-template-columns:1fr 1fr; gap:4rem; align-items:center;">
+<section id="about" style="background:var(--white);">
   <div>
     <p class="section-label">About</p>
     <h2 class="section-heading">Still figuring it out, just like you</h2>
@@ -714,13 +713,7 @@
       The goal isn't scratch. The goal is bogeys.
     </p>
   </div>
-  <div style="background:var(--green-deep);border-radius:8px;padding:3rem;text-align:center;">
-    <div style="font-family:var(--serif);font-size:4rem;color:var(--gold-light);margin-bottom:0.5rem;">90</div>
-    <div style="font-size:0.8rem;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;color:var(--green-light);margin-bottom:1.5rem;">Bogey golf. Every hole.</div>
-    <div style="font-size:0.9rem;font-weight:300;color:var(--cream-dark);line-height:1.7;font-style:italic;">
-      "The average recreational golfer shoots around 100. Chasing Bogeys means aiming for 90 — one shot better per hole. That's it. That's the whole plan."
-    </div>
-  </div>
+
 </section>
 
 <!-- FOOTER -->

@@ -32,7 +32,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:100; background:var(--gree
 .tool-title em { color:var(--gold-light); font-style:italic; }
 .tool-subtitle { font-size:1rem; font-weight:300; color:var(--green-light); max-width:520px; margin:0 auto 1.5rem; line-height:1.7; }
 .tool-meta { display:inline-flex; align-items:center; gap:1.5rem; font-size:.78rem; color:var(--tan); }
-.quiz-wrapper { max-width:720px; margin:0 auto; padding:3rem 1.5rem 5rem; }
+.quiz-wrapper { max-width:900px; margin:0 auto; padding:2rem 1rem 4rem; }
 .progress-label { font-size:.75rem; color:var(--text-muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.5rem; display:flex; justify-content:space-between; }
 .progress-bar-wrap { background:var(--cream-dark); border-radius:4px; height:4px; margin-bottom:2.5rem; overflow:hidden; }
 .progress-bar-fill { height:100%; background:var(--gold); border-radius:4px; transition:width .4s ease; }
@@ -56,7 +56,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:100; background:var(--gree
 .ball-snapshot { background:var(--cream); border:1px solid var(--cream-dark); border-radius:8px; padding:1.25rem 1.5rem; margin-bottom:1.5rem; display:none; }
 .ball-snapshot.visible { display:block; }
 .ball-snapshot-title { font-size:.7rem; font-weight:500; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); margin-bottom:.75rem; }
-.ball-snapshot-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:.5rem; }
+.ball-snapshot-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:.5rem; }
 .snapshot-stat { text-align:center; }
 .snapshot-val { font-size:1rem; font-weight:500; color:var(--green-deep); }
 .snapshot-lbl { font-size:.65rem; color:var(--text-muted); margin-top:.1rem; }
@@ -185,6 +185,28 @@ footer { background:var(--green-deep); padding:2rem 3rem; display:flex; justify-
   .picker-cards { grid-template-columns:1fr; }
 }
 
+
+/* ── FAQ ── */
+.faq-item { border-bottom: 1px solid var(--cream-dark); }
+.faq-question {
+  width: 100%; background: none; border: none; text-align: left;
+  font-family: var(--sans); font-size: .95rem; font-weight: 500;
+  color: var(--green-deep); padding: .9rem 0; cursor: pointer;
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 1rem; transition: color .15s;
+}
+.faq-question:hover { color: var(--green-mid); }
+.faq-chevron { font-size: .75rem; color: var(--gold); flex-shrink: 0; transition: transform .2s; }
+.faq-answer {
+  max-height: 0; overflow: hidden; transition: max-height .3s ease;
+  font-size: .88rem; font-weight: 300; color: var(--text-mid); line-height: 1.75;
+}
+.faq-answer p { padding-bottom: .9rem; }
+.faq-answer em { font-style: italic; }
+.faq-answer strong { font-weight: 600; color: var(--text-dark); }
+.faq-item.open .faq-chevron { transform: rotate(180deg); }
+.faq-item.open .faq-answer { max-height: 600px; }
+
 </style>
 </head>
 <body>
@@ -202,7 +224,7 @@ footer { background:var(--green-deep); padding:2rem 3rem; display:flex; justify-
   <div class="hero-inner">
     <p class="tool-eyebrow">Chasing Bogeys · Tool</p>
     <h1 class="tool-title" id="hero-title"><em>What Ball?</em></h1>
-    <p class="tool-subtitle" id="hero-subtitle">The question every golfer asks. Answer 7 quick questions and we'll match you to the right ball from 37 robot-tested urethane models — with real carry distance data driving every recommendation.</p>
+    <p class="tool-subtitle" id="hero-subtitle">Answer a few quick questions and we'll recommend a few balls that fit your game, based on publicly available robot testing data from multiple sources.</p>
     <div class="tool-meta" id="hero-meta">
       <span>37 urethane balls</span>
       <span>·</span>
@@ -235,6 +257,14 @@ footer { background:var(--green-deep); padding:2rem 3rem; display:flex; justify-
   <button class="btn-start-quiz" id="btn-start" disabled onclick="startQuiz()">Start the Quiz →</button>
 </div>
 
+
+<div style="max-width:900px;margin:0 auto;padding:0 1rem 2rem;">
+  <div style="border-top:1px solid var(--cream-dark);padding-top:2rem;">
+    <h2 style="font-family:var(--serif);font-size:1.5rem;color:var(--green-deep);margin-bottom:1.25rem;">Ball Fitting FAQ</h2>
+    <div id="faq-list"></div>
+  </div>
+</div>
+
 <div class="quiz-wrapper">
   <div id="quiz" style="display:none">
     <div class="progress-label">
@@ -251,9 +281,9 @@ footer { background:var(--green-deep); padding:2rem 3rem; display:flex; justify-
       <h2 class="step-question">What's your driver swing speed?</h2>
       <p class="step-hint">This tells us which robot test condition to pull your data from — so carry distance comparisons are apples-to-apples. If you're unsure, pick the middle option.</p>
       <div class="options-grid three-col">
-        <button class="option-btn" data-step="1" data-val="fast" onclick="pick(this)"><span class="opt-label">116+ mph</span><span class="opt-desc">Tour / scratch level</span></button>
-        <button class="option-btn" data-step="1" data-val="mid"  onclick="pick(this)"><span class="opt-label">95–115 mph</span><span class="opt-desc">Average to strong amateur</span></button>
-        <button class="option-btn" data-step="1" data-val="slow" onclick="pick(this)"><span class="opt-label">Under 95 mph</span><span class="opt-desc">Senior / moderate swing</span></button>
+        <button class="option-btn" data-step="1" data-val="fast" onclick="pick(this)"><span class="opt-label">116 mph</span><span class="opt-desc">Tour / scratch level</span></button>
+        <button class="option-btn" data-step="1" data-val="mid"  onclick="pick(this)"><span class="opt-label">102 mph</span><span class="opt-desc">Average to strong amateur</span></button>
+        <button class="option-btn" data-step="1" data-val="slow" onclick="pick(this)"><span class="opt-label">86 mph</span><span class="opt-desc">Senior / moderate swing</span></button>
       </div>
       <div class="step-nav"><div></div><button class="btn-next" id="next-1" disabled onclick="go(2)">Continue →</button></div>
     </div>
@@ -283,12 +313,12 @@ footer { background:var(--green-deep); padding:2rem 3rem; display:flex; justify-
         <option>Vice Pro</option><option>Vice Pro Air</option><option>Vice Pro Plus</option>
         <option>Wilson Staff Model</option><option>Wilson Staff Model X</option>
         <option>Wilson Triad</option>
+        <option value="noball">I don't have a regular ball</option>
         <option value="unlisted">My ball is not listed</option>
       </select>
       <div class="ball-snapshot" id="ball-snapshot">
         <div class="ball-snapshot-title">Your current ball at a glance</div>
         <div class="ball-snapshot-grid">
-          <div class="snapshot-stat"><div class="snapshot-val" id="sn-carry">—</div><div class="snapshot-lbl">Carry (yds)</div><div class="snapshot-cat" id="sn-carry-c"></div></div>
           <div class="snapshot-stat"><div class="snapshot-val" id="sn-height">—</div><div class="snapshot-lbl">Launch Ht (ft)</div><div class="snapshot-cat" id="sn-height-c"></div></div>
           <div class="snapshot-stat"><div class="snapshot-val" id="sn-iron">—</div><div class="snapshot-lbl">Iron Spin</div><div class="snapshot-cat" id="sn-iron-c"></div></div>
           <div class="snapshot-stat"><div class="snapshot-val" id="sn-wedge">—</div><div class="snapshot-lbl">Wedge Spin</div><div class="snapshot-cat" id="sn-wedge-c"></div></div>
@@ -318,6 +348,25 @@ footer { background:var(--green-deep); padding:2rem 3rem; display:flex; justify-
           <div class="options-grid two-col">
             <button class="option-btn" data-field="ul-spin" data-val="low"  onclick="pickSub(this,'ul-spin')"><span class="opt-label">Low</span><span class="opt-desc">Tends to release and run out</span></button>
             <button class="option-btn" data-field="ul-spin" data-val="high" onclick="pickSub(this,'ul-spin')"><span class="opt-label">High</span><span class="opt-desc">Checks up and bites</span></button>
+          </div>
+        </div>
+      </div>
+      <div id="noball-wrap" style="display:none">
+        <div class="sub-label">Tell us about your preferences:</div>
+        <div style="margin-bottom:1rem">
+          <div class="sub-label" style="font-size:.78rem;margin-bottom:.5rem">How much spin do you prefer?</div>
+          <div class="options-grid three-col">
+            <button class="option-btn" data-field="nb-spin" data-val="high"  onclick="pickSub(this,'nb-spin')"><span class="opt-label">High</span><span class="opt-desc">More stopping power &amp; workability</span></button>
+            <button class="option-btn" data-field="nb-spin" data-val="mid"   onclick="pickSub(this,'nb-spin')"><span class="opt-label">Medium</span><span class="opt-desc">Balanced</span></button>
+            <button class="option-btn" data-field="nb-spin" data-val="low"   onclick="pickSub(this,'nb-spin')"><span class="opt-label">Low</span><span class="opt-desc">More distance &amp; straighter flight</span></button>
+          </div>
+        </div>
+        <div>
+          <div class="sub-label" style="font-size:.78rem;margin-bottom:.5rem">How high do you want the ball to launch?</div>
+          <div class="options-grid three-col">
+            <button class="option-btn" data-field="nb-launch" data-val="high"  onclick="pickSub(this,'nb-launch')"><span class="opt-label">High</span><span class="opt-desc">More carry &amp; stopping power</span></button>
+            <button class="option-btn" data-field="nb-launch" data-val="mid"   onclick="pickSub(this,'nb-launch')"><span class="opt-label">Medium</span><span class="opt-desc">Balanced</span></button>
+            <button class="option-btn" data-field="nb-launch" data-val="low"   onclick="pickSub(this,'nb-launch')"><span class="opt-label">Low</span><span class="opt-desc">Wind performance &amp; more rollout</span></button>
           </div>
         </div>
       </div>
@@ -355,7 +404,7 @@ footer { background:var(--green-deep); padding:2rem 3rem; display:flex; justify-
         <button class="option-btn" data-step="4" data-val="similar" onclick="pick(this)"><span class="opt-label">Similar</span><span class="opt-desc">Keep current spin profile</span></button>
         <button class="option-btn" data-step="4" data-val="less"    onclick="pick(this)"><span class="opt-label">Less spin</span><span class="opt-desc">Distance &amp; straighter flight</span></button>
       </div>
-      <span class="step-note">Note: No ball can cure a hook or slice on its own.</span>
+      <p style="font-size:1rem;font-weight:700;color:var(--text-dark);margin-top:1rem;padding:.75rem 1rem;background:var(--cream);border-left:3px solid var(--gold);border-radius:0 6px 6px 0;">Note: No ball can cure a hook or slice on its own.</p>
       <div class="step-nav">
         <button class="btn-back" onclick="go(3)">← Back</button>
         <button class="btn-next" id="next-4" disabled onclick="go(5)">Continue →</button>
@@ -628,6 +677,7 @@ function pickDataset(ds) {
   document.getElementById('btn-start').disabled = false;
   updateBallDropdown();
   updateHero();
+  updateSpeedLabels();
 }
 
 function updateHero() {
@@ -671,6 +721,7 @@ function updateBallDropdown() {
   A.ball = null;
   document.getElementById('ball-snapshot').classList.remove('visible');
   document.getElementById('unlisted-wrap').style.display='none';
+  document.getElementById('noball-wrap').style.display='none';
   document.getElementById('next-2').disabled = true;
 }
 
@@ -702,6 +753,18 @@ function go(n){
   const qw=document.querySelector('.quiz-wrapper');if(qw){const y=qw.getBoundingClientRect().top+window.scrollY-80;window.scrollTo({top:y,behavior:'smooth'});}
 }
 
+function updateSpeedLabels() {
+  const labels = DS === 'tg'
+    ? [['114 mph','Tour / scratch level'],['93 mph','Average to strong amateur'],['78 mph','Senior / moderate swing']]
+    : [['116 mph','Tour / scratch level'],['102 mph','Average to strong amateur'],['86 mph','Senior / moderate swing']];
+  document.querySelectorAll('.option-btn[data-step="1"]').forEach((btn,i) => {
+    if(labels[i]) {
+      btn.querySelector('.opt-label').textContent = labels[i][0];
+      btn.querySelector('.opt-desc').textContent  = labels[i][1];
+    }
+  });
+}
+
 function pick(btn){
   const step=btn.dataset.step;
   document.querySelectorAll(`.option-btn[data-step="${step}"]`).forEach(b=>b.classList.remove('selected'));
@@ -719,6 +782,7 @@ function pickSub(btn,field){
   btn.classList.add('selected');
   S[field]=btn.dataset.val;
   if(field==='feel-pref'){A.feelPref=btn.dataset.val;chkFeel();}
+  if(field==='nb-spin'||field==='nb-launch'){S[field]=btn.dataset.val;chkNoball();}
   if(field==='green-pref'){A.greenPref=btn.dataset.val;chkGreen();}
   if(['ul-launch','ul-feel','ul-spin'].includes(field))chkUnlisted();
 }
@@ -730,15 +794,25 @@ function hideFeel(){document.getElementById('feel-sub').classList.remove('visibl
 function showGreen(){document.getElementById('green-sub').classList.add('visible');}
 function hideGreen(){document.getElementById('green-sub').classList.remove('visible');A.greenPref=null;chkGreen();}
 function chkUnlisted(){document.getElementById('next-2').disabled=!(S['ul-launch']&&S['ul-feel']&&S['ul-spin']);}
+function chkNoball(){document.getElementById('next-2').disabled=!(S['nb-spin']&&S['nb-launch']);}
 
 function onBallSelect(){
   const v=document.getElementById('current-ball').value;
   A.ball=v||null;
   const snap=document.getElementById('ball-snapshot');
   const ul=document.getElementById('unlisted-wrap');
-  if(!v){snap.classList.remove('visible');ul.style.display='none';document.getElementById('next-2').disabled=true;return;}
-  if(v==='unlisted'){snap.classList.remove('visible');ul.style.display='block';chkUnlisted();return;}
+  if(!v){snap.classList.remove('visible');ul.style.display='none';document.getElementById('noball-wrap').style.display='none';document.getElementById('next-2').disabled=true;return;}
+  if(v==='noball'){
+    snap.classList.remove('visible');
+    document.getElementById('unlisted-wrap').style.display='none';
+  document.getElementById('noball-wrap').style.display='none';
+    document.getElementById('noball-wrap').style.display='block';
+    chkNoball();
+    return;
+  }
+  if(v==='unlisted'){snap.classList.remove('visible');document.getElementById('noball-wrap').style.display='none';ul.style.display='block';chkUnlisted();return;}
   ul.style.display='none';
+  document.getElementById('noball-wrap').style.display='none';
   const pool=activeBallPool();
   const b=pool[v];if(!b)return;
   const spd=A.spd||'mid';
@@ -750,7 +824,6 @@ function onBallSelect(){
   }
   function setSnap(id,val,catStr,type){setS(id,val,catStr,type);}
   const TA=AT();
-  setS('carry',cr.toFixed(1),cat(cr,TA.carry.lo,TA.carry.hi));
   setS('height',b.s[HI].toFixed(1),cat(b.s[HI],TA.height.lo,TA.height.hi));
   setS('iron',b.s[ISI].toLocaleString(),cat(b.s[ISI],TA.ironSpin.lo,TA.ironSpin.hi));
   setS('wedge',b.s[WSI].toLocaleString(),cat(b.s[WSI],TA.wedgeSpin.lo,TA.wedgeSpin.hi));
@@ -761,7 +834,7 @@ function onBallSelect(){
 
 function setCtx(n){
   const ctxPool=activeBallPool();
-  if(!A.ball||A.ball==='unlisted'||!ctxPool[A.ball])return;
+  if(!A.ball||A.ball==='unlisted'||A.ball==='noball'||!ctxPool[A.ball])return;
   const b=ctxPool[A.ball];const spd=A.spd||'mid';const cr=carry(A.ball,spd);
   const msgs={
     3:`Your current ball (${A.ball}): launch height ${b.s[HI].toFixed(1)} ft — ${catLbl(cat(b.s[HI],AT().height.lo,AT().height.hi))} launch`,
@@ -783,6 +856,11 @@ function findBall(){
   if(A.ball&&A.ball!=='unlisted'&&POOL[A.ball]){
     const b=POOL[A.ball];
     cCR=carry(A.ball,spd);cH=b.s[HI];cI=b.s[ISI];cW=b.s[WSI];cC=ballComp(b);
+  }else if(A.ball==='noball'){
+    // Use generic preferences from nb-spin / nb-launch
+    cCR=260; cH=78.5; cI=6800; cW=9100; cC=80;
+    if(S['nb-launch']==='low')cH=75; else if(S['nb-launch']==='high')cH=82;
+    if(S['nb-spin']==='low'){cI=6200;cW=8500;} else if(S['nb-spin']==='high'){cI=7200;cW=9700;}
   }else if(A.ball==='unlisted'){
     cCR=260;cH=78.5;cI=6800;cW=9100;cC=80;
     if(S['ul-launch']==='low')cH=75;else if(S['ul-launch']==='high')cH=82;
@@ -849,7 +927,7 @@ let cCRGlobal=null;
 function render(pool,elId,label,spd){
   const el=document.getElementById(elId);
   if(!pool.length){el.innerHTML='';return;}
-  cCRGlobal=A.ball&&A.ball!=='unlisted'&&activeBallPool()[A.ball]?carry(A.ball,spd):null;
+  cCRGlobal=A.ball&&A.ball!=='unlisted'&&A.ball!=='noball'&&activeBallPool()[A.ball]?carry(A.ball,spd):null;
   const ranks=['Top Pick','Runner Up','Also Consider'];
   function why(r){
     const pts=[];
@@ -905,6 +983,7 @@ function restart(){
   document.getElementById('current-ball').value='';
   document.getElementById('ball-snapshot').classList.remove('visible');
   document.getElementById('unlisted-wrap').style.display='none';
+  document.getElementById('noball-wrap').style.display='none';
   document.getElementById('feel-sub').classList.remove('visible');
   document.getElementById('green-sub').classList.remove('visible');
   [3,4,5,6].forEach(n=>{const e=document.getElementById('ctx-'+n);if(e)e.style.display='none';});
@@ -912,6 +991,76 @@ function restart(){
 }
 
 // Quiz starts after dataset selection
+
+// ── FAQ ──────────────────────────────────────────────────────────────
+const FAQS = [
+  {
+    q: "What factors are important when picking a ball?",
+    a: `<p>First and foremost is <strong>stopping power</strong>. When you hit a well-struck approach shot into a green you want that ball to stay there. Stopping power can come from spin, launch height, or a combination of both.</p>
+<p>Next is <strong>greenside performance</strong>. Whether you prefer more release or more bite around the greens, getting the ball close to the hole from off the green is the low-hanging fruit to lower scores.</p>
+<p>Then there's <strong>distance</strong>. Our tool takes your preferences and recommends balls based on carry-distance performance from robot testing.</p>
+<p>And don't discount <strong>cost</strong>. Some of us are still feeding more balls to the woods or water than we'd like. Our tool recommends both premium and budget options.</p>`
+  },
+  {
+    q: "Does what ball I play <em>really</em> matter?",
+    a: `<p>Absolutely. The ball is the only piece of equipment you use on every single shot. A well-fitted ball can complement your game and help fight your tendencies — just like a well-fitted club.</p>`
+  },
+  {
+    q: "Which dataset should I use?",
+    a: `<p>Isn't it interesting how even with robot testing we can see quite different results? Just goes to show you every swing is different, even a robot's.</p>
+<p>From what I've seen, both the MyGolfSpy and Today's Golfer robot tests use sound methodologies. I can't say for sure which results are going to align with your game more accurately — which is why your own real-world testing will always be an important part of getting fitted into the right ball. This tool just gives you a starting point.</p>`
+  },
+  {
+    q: "Couldn't I just do a ball fitting?",
+    a: `<p>While you can get useful data doing a ball fitting at a simulator, the issue is simulators can't account for the different aerodynamic qualities of each ball — which is an important factor for how they actually fly for you and your tendencies. Since both these robot tests hit balls downrange, they not only capture simulator data but also real-world flight data through the air.</p>
+<p>If you do have the opportunity to hit a bunch of premium balls downrange, by all means take advantage of it. I'm just not aware of that opportunity being available to the average golfer, and hitting into a screen is going to paint an incomplete picture — which is exactly where robot testing data fills in the gaps.</p>`
+  },
+  {
+    q: "Do I really need to use a premium ball?",
+    a: `<p>This question usually comes down to ionomer (cheaper) versus urethane (more expensive) covers. My opinion is that anyone who is serious about scoring should <em>at least</em> be playing a urethane-covered ball.</p>
+<p>Urethane covers provide more spin in your approach and greenside game. Spin gives you distance control and stopping power where it matters most. When you hit a ball into a green you want to know it's going the distance you expect — and that when it hits the green, it's going to stay there. And within urethane there are both budget and premium options to choose from.</p>`
+  },
+  {
+    q: "I have a really fast/slow swing speed — don't I need a firm/soft ball?",
+    a: `<p>This is mostly a myth. Unless you're at the extreme ends of swing speed (think Bryson DeChambeau or super-senior), matching a ball's compression to your swing speed is not a meaningful performance benefit. Finding a ball with the stopping power and launch characteristics that complement your game will be far more beneficial.</p>
+<p>A couple of examples from the pros: Rory McIlroy, one of the longest drivers on Tour, won the 2025 Masters playing a TP5 — despite a firmer TP5x existing. World #1 Scottie Scheffler plays a Pro V1 and not the firmer Pro V1x or Left Dash.</p>`
+  },
+  {
+    q: "When should I pay attention to compression?",
+    a: `<p>Generally speaking, firmer equals faster ball speeds, and faster equals more distance. But there are exceptions — the Bridgestone Tour B RX is a softer offering that can compete distance-wise with many firmer balls due to its carry numbers.</p>
+<p>Where compression really comes into play is <strong>feel</strong>. If you prefer a softer feel, you'll want a lower compression ball. If you like a firm, clicky feel, you'll be looking at higher compression offerings. When evaluating compression, feel preference matters more than swing speed.</p>`
+  },
+  {
+    q: "Should I stick to one ball?",
+    a: `<p>The common wisdom is yes — you get used to how a ball reacts to your swing, and especially in the short game, consistency matters.</p>
+<p>That said, there's another school of thought that you could have a small quiver of balls. You don't see it often among the pros, but when tournaments drop the one-ball rule some players will use different balls situationally. A high-profile example was Phil Mickelson switching balls at Oakmont during the 2023 PGA Championship.</p>
+<p>I'm personally not a fan of switching hole-by-hole, but having a small selection isn't a terrible idea — a gamer, a wind ball, and a budget ball for when the swing gets wild.</p>`
+  },
+];
+
+function initFAQ() {
+  const list = document.getElementById('faq-list');
+  if (!list) return;
+  list.innerHTML = FAQS.map((f, i) => `
+    <div class="faq-item" id="faq-${i}">
+      <button class="faq-question" onclick="toggleFAQ(${i})">
+        <span>${f.q}</span>
+        <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-answer">${f.a}</div>
+    </div>`).join('');
+}
+
+function toggleFAQ(i) {
+  const item = document.getElementById('faq-' + i);
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(el => el.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+// Init FAQ on load
+document.addEventListener('DOMContentLoaded', initFAQ);
+
 </script>
 </body>
 </html>

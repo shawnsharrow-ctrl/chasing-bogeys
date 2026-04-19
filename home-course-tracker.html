@@ -1955,11 +1955,13 @@ async function runCourseSearch(q) {
       results.innerHTML = '<div class="course-search-status">No courses found — try a different name or enter manually below.</div>';
       return;
     }
-    results.innerHTML = courses.slice(0, 10).map(c => `
-      <div class="course-result-item" onclick="selectApiCourse(${c.id}, '${escQ(c.club_name)}', '${escQ(c.location || '')}')">
+    results.innerHTML = courses.slice(0, 10).map(c => {
+      const loc = c.location ? [c.location.city, c.location.state, c.location.country].filter(Boolean).join(', ') : '';
+      return `<div class="course-result-item" onclick="selectApiCourse(${c.id}, '${escQ(c.club_name)}', '${escQ(loc)}')">
         <div class="course-result-name">${c.club_name}</div>
-        <div class="course-result-location">${c.location || ''}</div>
-      </div>`).join('');
+        <div class="course-result-location">${loc}</div>
+      </div>`;
+    }).join('');
   } catch(e) {
     results.innerHTML = `<div class="course-search-status">Search unavailable — please enter manually below.</div>`;
     console.error('Course search error:', e);
@@ -1985,19 +1987,25 @@ async function selectApiCourse(id, name, location) {
     if (!res.ok) throw new Error(data.error);
 
     const course = data.course || data;
-    _apiTees = course.tees || [];
+    const rawTees = course.tees || {};
+    // Flatten male/female tee arrays and tag with gender
+    const maleTees   = (rawTees.male   || []).map(t => ({...t, gender:'male'}));
+    const femaleTees = (rawTees.female || []).map(t => ({...t, gender:'female'}));
+    _apiTees = [...maleTees, ...femaleTees];
 
     if (!_apiTees.length) {
       teeSelect.innerHTML = '<option value="">No tee data — enter manually</option>';
       return;
     }
 
-    // Populate tee dropdown — group by gender, show name/rating/slope
     teeSelect.innerHTML = '<option value="">— Choose your tee —</option>' +
       _apiTees.map((t, i) => {
-        const gender = t.tee_name?.toLowerCase().includes('women') ? '♀ ' : '';
-        const label = `${gender}${t.tee_name} — Rating: ${t.course_rating || '?'} / Slope: ${t.slope_rating || '?'}`;
-        return `<option value="${i}">${label}</option>`;
+        const genderLabel = t.gender === 'female' ? '♀ ' : '♂ ';
+        const name = t.tee_name || 'Unknown';
+        const rating = t.course_rating || '?';
+        const slope  = t.slope_rating  || '?';
+        const par    = t.par_total     || '?';
+        return `<option value="${i}">${genderLabel}${name} — Par ${par} · Rating ${rating} · Slope ${slope}</option>`;
       }).join('');
 
   } catch(e) {
@@ -2014,15 +2022,18 @@ function applySelectedTee() {
   // Fill in rating, slope, par from API data
   if (tee.course_rating) document.getElementById('course-rating').value = tee.course_rating;
   if (tee.slope_rating)  document.getElementById('course-slope').value  = tee.slope_rating;
-  if (tee.par)           document.getElementById('course-par').value    = tee.par;
+  if (tee.par_total)     document.getElementById('course-par').value    = tee.par_total;
 
   // Fill hole pars if available
   if (tee.holes && tee.holes.length) {
     tee.holes.forEach((h, i) => {
-      const inp = document.getElementById(`hole-par-${i}`);
+      const inp = document.getElementById('hole-par-' + i);
       if (inp && h.par) inp.value = h.par;
     });
   }
+
+  // Switch to manual tab to show the populated fields
+  switchModalTab('manual');
 }
 
 function escQ(s) { return (s||'').replace(/'/g, "\'").replace(/"/g, '&quot;'); }

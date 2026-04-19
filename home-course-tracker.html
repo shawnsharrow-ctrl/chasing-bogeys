@@ -715,18 +715,30 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
     </div>
     <div class="modal-body">
       <div class="modal-tab-row">
-        <button class="modal-tab active" onclick="switchModalTab('search')">Search GHIN</button>
+        <button class="modal-tab active" onclick="switchModalTab('search')">Search Courses</button>
         <button class="modal-tab" onclick="switchModalTab('manual')">Enter Manually</button>
       </div>
 
       <div id="modal-tab-search">
         <div class="form-group">
-          <label class="form-label">Course Name</label>
-          <input class="form-input" type="text" id="ghin-search-input" placeholder="e.g. Avalon Golf Links">
+          <label class="form-label">Search for your course</label>
+          <div class="course-search-wrap">
+            <input class="course-search-input" type="text" id="api-course-search"
+              placeholder="Type course name to search…"
+              oninput="debounceCourseSearch(this.value)"
+              autocomplete="off">
+            <div class="course-search-results" id="api-course-results"></div>
+          </div>
         </div>
-        <button class="btn-primary" onclick="searchGHIN()">Search GHIN</button>
-        <div id="ghin-results" style="margin-top:1rem;"></div>
-        <p style="font-size:0.75rem;color:var(--text-muted);margin-top:1rem;line-height:1.6;">GHIN integration will auto-populate course rating, slope, and hole pars. Requires GHIN connection in Settings.</p>
+        <div class="tee-picker" id="tee-picker-wrap">
+          <label>Select your tee</label>
+          <select id="tee-picker-select" onchange="applySelectedTee()">
+            <option value="">— Choose tee —</option>
+          </select>
+        </div>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;line-height:1.6;">
+          Can't find your course? Use the <strong>Enter Manually</strong> tab instead.
+        </p>
       </div>
 
       <div id="modal-tab-manual" style="display:none;">

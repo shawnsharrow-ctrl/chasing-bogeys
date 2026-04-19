@@ -60,7 +60,7 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
 <body>
 
 <nav>
-  <a href="home.html" class="nav-logo">Chasing <em>Bogeys</em></a>
+  <a href="index.html" class="nav-logo">Chasing <em>Bogeys</em></a>
 </nav>
 
 <div class="page">
@@ -211,7 +211,7 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
       <div style="font-size:3rem;margin-bottom:1rem;">⛳</div>
       <h1 class="card-title" style="text-align:center;">Account created!</h1>
       <p class="card-sub" style="text-align:center;">Welcome to Chasing Bogeys. Your profile has been saved and a confirmation email is on its way.</p>
-      <a href="home.html" class="btn-primary" style="text-decoration:none;text-align:center;display:block;">Go to the site →</a>
+      <a href="index.html" class="btn-primary" style="text-decoration:none;text-align:center;display:block;">Go to the site →</a>
     </div>
 
   </div>
@@ -250,7 +250,7 @@ async function signIn() {
   const { data, error } = await _supabase.auth.signInWithPassword({ email, password: pw });
   if (error) { showError('signin-error', error.message); return; }
   // Success — redirect to home
-  window.location.href = 'home.html';
+  window.location.href = 'index.html';
 }
 
 function regStep1() {

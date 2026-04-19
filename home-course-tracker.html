@@ -489,7 +489,7 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
         <div class="ghin-dot" id="ghin-dot"></div>
         <span id="ghin-status-text">GHIN not connected</span>
       </div>
-      <a onclick="openModal('settings-modal')">Connect GHIN →</a>
+      <a onclick="openModal('settings-modal')">Enter GHIN number →</a>
     </div>
   </aside>
 
@@ -926,7 +926,7 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
         <label class="form-label">Last Name</label>
         <input class="form-input" type="text" id="modal-ghin-last" placeholder="Your last name">
       </div>
-      <p style="font-size:0.78rem;color:var(--text-muted);line-height:1.65;margin-bottom:1.25rem;">Live GHIN login requires a server-side proxy (in development). Your GHIN number is used now for course lookup and will enable score posting when the integration is complete.</p>
+      <p style="font-size:0.78rem;color:var(--text-muted);line-height:1.65;margin-bottom:1.25rem;">Save your GHIN number here to pre-fill it when the live GHIN integration launches. Full course lookup and score posting are coming in a future update.</p>
       <div class="form-group">
         <label class="form-label">Pitch threshold <span>(yards)</span></label>
         <input class="form-input" type="number" id="modal-pitch" value="100" min="20" max="200">
@@ -972,56 +972,10 @@ function loadState() {
   } catch(e){}
 }
 
-// ════════════════════════════════════════
-// SAMPLE DATA
-// ════════════════════════════════════════
-function loadSampleData() {
-  if (state.courses.length) return;
-  const avalon_nw = {
-    id:'avalon_nw', name:'North / West', location:'Burlington, WA',
-    rating:71.8, slope:127, par:72, holes:18,
-    isComplex:true, complexName:'Avalon Golf Links', complexId:'avalon',
-    nines:['North','West'],
-    holePars:[4,3,5,4,3,5,4,3,5, 4,4,4,3,4,5,3,5,4]
-  };
-  const avalon_ws = {
-    id:'avalon_ws', name:'West / South', location:'Burlington, WA',
-    rating:70.9, slope:124, par:72, holes:18,
-    isComplex:true, complexName:'Avalon Golf Links', complexId:'avalon',
-    nines:['West','South'],
-    holePars:[4,4,4,3,4,5,3,5,4, 4,4,4,3,4,5,3,5,4]
-  };
-  const avalon_sn = {
-    id:'avalon_sn', name:'South / North', location:'Burlington, WA',
-    rating:71.2, slope:125, par:72, holes:18,
-    isComplex:true, complexName:'Avalon Golf Links', complexId:'avalon',
-    nines:['South','North'],
-    holePars:[4,4,4,3,4,5,3,5,4, 4,3,5,4,3,5,4,3,5]
-  };
-  state.courses = [avalon_nw, avalon_ws, avalon_sn];
-
-  // Sample rounds
-  const rounds = [
-    { id:'r1', courseId:'avalon_nw', date:'2025-05-10', scores:[5,3,6,5,5,3,5,5,5, 5,5,6,4,5,4,4,6,5],
-      putts:[2,1,2,2,2,2,2,2,2, 2,2,2,2,2,2,1,2,2], penalties:[], chips:[], pitches:[],
-      journal:{tee:'Striped a drive down the middle on 1',approach:'Stuck a 7-iron on 14 to 8 feet',short:'Made a slippery 12-footer for par on 7',notes:'Good round overall. Need to work on lag putting.',share:true}
-    },
-    { id:'r2', courseId:'avalon_nw', date:'2025-05-24', scores:[5,4,6,5,5,3,6,5,5, 5,5,7,3,5,5,4,6,5],
-      putts:[2,2,2,2,2,1,3,2,2, 2,2,3,1,2,2,2,2,2], penalties:[{hole:2,shot:'tee',type:'ob'},{hole:11,shot:'approach',type:'hazard'}], chips:[], pitches:[],
-      journal:{tee:'',approach:'',short:'',notes:'',share:false}
-    },
-    { id:'r3', courseId:'avalon_nw', date:'2025-06-07', scores:[5,3,5,5,5,3,5,5,5, 5,5,6,4,5,4,4,5,5],
-      putts:[2,1,2,2,2,1,2,2,2, 2,2,2,2,2,1,2,2,2], penalties:[], chips:[], pitches:[],
-      journal:{tee:'Best drive of the year on 3',approach:'',short:'Made a good chip on 16 to save par',notes:'Trending in the right direction.',share:true}
-    },
-    { id:'r4', courseId:'avalon_ws', date:'2025-06-14', scores:[5,5,6,4,5,4,4,5,5, 5,3,6,5,5,4,6,5,5],
-      putts:[2,2,2,1,2,2,1,2,2, 2,1,2,2,2,2,2,2,2], penalties:[], chips:[], pitches:[],
-      journal:{tee:'',approach:'',short:'',notes:'',share:false}
-    },
-  ];
-  state.rounds = rounds;
-  state.activeCourseId = 'avalon_nw';
-  saveState();
+function clearLocalData() {
+  localStorage.removeItem('cb_hct_v1');
+  state = { courses:[], rounds:[], settings:{ ghinNum:'', ghinLast:'', pitchYds:100, chipYds:25, hcpOverride:null }, activeCourseId:null, activeTab:'stats' };
+  renderAll();
 }
 
 // ════════════════════════════════════════
@@ -1760,7 +1714,7 @@ function toggleComplex() {
 function searchGHIN() {
   const q = document.getElementById('ghin-search-input').value.trim();
   if (!q) return;
-  document.getElementById('ghin-results').innerHTML = '<div style="font-size:0.82rem;color:var(--text-muted);padding:0.5rem 0;">GHIN search requires an active connection. Please connect your GHIN account in Settings, or add the course manually.</div>';
+  document.getElementById('ghin-results').innerHTML = '<div style="font-size:0.82rem;color:var(--text-muted);padding:0.5rem 0;line-height:1.6;">Live GHIN course search is coming soon — it requires a server-side connection that is currently in development. In the meantime, please use <strong>Enter Manually</strong> to add your course.</div>';
 }
 
 function saveCourse() {
@@ -1852,9 +1806,8 @@ async function initApp() {
     state.userId = session.user.id;
     await loadFromSupabase();
   } else {
-    // Not logged in — fall back to localStorage demo data
+    // Not logged in — load from localStorage only
     loadState();
-    loadSampleData();
   }
   renderAll();
 }
@@ -1925,7 +1878,6 @@ async function saveCourseToSupabase(course) {
 }
 
 loadState();
-loadSampleData();
 // Set today's date
 document.getElementById('round-date') && (document.getElementById('round-date').value = new Date().toISOString().split('T')[0]);
 initApp();

@@ -440,6 +440,41 @@ footer { background: var(--green-deep); padding: 1.5rem 2rem; display: flex; jus
 /* Penalty flag */
 .sc-pen { color: var(--red); font-size: 0.7rem; }
 
+
+/* ── COURSE SEARCH ── */
+.course-search-wrap { position:relative; margin-bottom:1rem; }
+.course-search-input {
+  width:100%; padding:.75rem 1rem; font-family:var(--sans); font-size:.92rem;
+  background:var(--cream); border:1.5px solid var(--cream-dark); border-radius:8px;
+  color:var(--text-dark); transition:border-color .15s;
+}
+.course-search-input:focus { outline:none; border-color:var(--green-mid); background:var(--white); }
+.course-search-results {
+  position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:200;
+  background:var(--white); border:1.5px solid var(--cream-dark); border-radius:8px;
+  box-shadow:0 8px 24px rgba(0,0,0,.10); max-height:320px; overflow-y:auto; display:none;
+}
+.course-result-item {
+  padding:.75rem 1rem; cursor:pointer; border-bottom:1px solid var(--cream);
+  transition:background .12s;
+}
+.course-result-item:last-child { border-bottom:none; }
+.course-result-item:hover { background:var(--cream); }
+.course-result-name { font-weight:500; font-size:.9rem; color:var(--text-dark); }
+.course-result-location { font-size:.78rem; color:var(--text-muted); margin-top:.15rem; }
+.course-search-status { padding:.75rem 1rem; font-size:.82rem; color:var(--text-muted); }
+.tee-picker { display:none; margin-bottom:1rem; }
+.tee-picker label { font-size:.78rem; font-weight:500; color:var(--text-mid); display:block; margin-bottom:.35rem; }
+.tee-picker select { width:100%; padding:.65rem 1rem; font-family:var(--sans); font-size:.88rem;
+  background:var(--cream); border:1.5px solid var(--cream-dark); border-radius:7px; color:var(--text-dark); }
+.search-or-divider {
+  display:flex; align-items:center; gap:.75rem; margin:1rem 0;
+  font-size:.75rem; font-weight:500; color:var(--text-muted); letter-spacing:.08em; text-transform:uppercase;
+}
+.search-or-divider::before,.search-or-divider::after {
+  content:''; flex:1; height:1px; background:var(--cream-dark);
+}
+
 </style>
 
 <!-- Supabase -->
@@ -1881,6 +1916,124 @@ loadState();
 // Set today's date
 document.getElementById('round-date') && (document.getElementById('round-date').value = new Date().toISOString().split('T')[0]);
 initApp();
+
+// ── COURSE SEARCH VIA NETLIFY FUNCTION ───────────────────────────────
+const PROXY = '/.netlify/functions/golf-course-search';
+let _searchTimer = null;
+let _apiTees = []; // tee data from API for selected course
+
+function debounceCourseSearch(val) {
+  clearTimeout(_searchTimer);
+  const results = document.getElementById('api-course-results');
+  if (val.length < 3) { results.style.display = 'none'; return; }
+  results.style.display = 'block';
+  results.innerHTML = '<div class="course-search-status">Searching…</div>';
+  _searchTimer = setTimeout(() => runCourseSearch(val), 400);
+}
+
+async function runCourseSearch(q) {
+  const results = document.getElementById('api-course-results');
+  try {
+    const res = await fetch(`${PROXY}?action=search&q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Search failed');
+
+    const courses = data.courses || [];
+    if (!courses.length) {
+      results.innerHTML = '<div class="course-search-status">No courses found — try a different name or enter manually below.</div>';
+      return;
+    }
+    results.innerHTML = courses.slice(0, 10).map(c => `
+      <div class="course-result-item" onclick="selectApiCourse(${c.id}, '${escQ(c.club_name)}', '${escQ(c.location || '')}')">
+        <div class="course-result-name">${c.club_name}</div>
+        <div class="course-result-location">${c.location || ''}</div>
+      </div>`).join('');
+  } catch(e) {
+    results.innerHTML = `<div class="course-search-status">Search unavailable — please enter manually below.</div>`;
+    console.error('Course search error:', e);
+  }
+}
+
+async function selectApiCourse(id, name, location) {
+  // Hide results, fill name field
+  document.getElementById('api-course-results').style.display = 'none';
+  document.getElementById('api-course-search').value = name;
+  document.getElementById('course-name').value = name;
+  document.getElementById('course-location').value = location;
+
+  // Fetch full course details for tees
+  const teeWrap = document.getElementById('tee-picker-wrap');
+  const teeSelect = document.getElementById('tee-picker-select');
+  teeWrap.style.display = 'block';
+  teeSelect.innerHTML = '<option value="">Loading tees…</option>';
+
+  try {
+    const res = await fetch(`${PROXY}?action=course&id=${id}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    const course = data.course || data;
+    _apiTees = course.tees || [];
+
+    if (!_apiTees.length) {
+      teeSelect.innerHTML = '<option value="">No tee data — enter manually</option>';
+      return;
+    }
+
+    // Populate tee dropdown — group by gender, show name/rating/slope
+    teeSelect.innerHTML = '<option value="">— Choose your tee —</option>' +
+      _apiTees.map((t, i) => {
+        const gender = t.tee_name?.toLowerCase().includes('women') ? '♀ ' : '';
+        const label = `${gender}${t.tee_name} — Rating: ${t.course_rating || '?'} / Slope: ${t.slope_rating || '?'}`;
+        return `<option value="${i}">${label}</option>`;
+      }).join('');
+
+  } catch(e) {
+    teeSelect.innerHTML = '<option value="">Could not load tees — enter manually</option>';
+    console.error('Tee fetch error:', e);
+  }
+}
+
+function applySelectedTee() {
+  const idx = document.getElementById('tee-picker-select').value;
+  if (idx === '' || !_apiTees[idx]) return;
+  const tee = _apiTees[idx];
+
+  // Fill in rating, slope, par from API data
+  if (tee.course_rating) document.getElementById('course-rating').value = tee.course_rating;
+  if (tee.slope_rating)  document.getElementById('course-slope').value  = tee.slope_rating;
+  if (tee.par)           document.getElementById('course-par').value    = tee.par;
+
+  // Fill hole pars if available
+  if (tee.holes && tee.holes.length) {
+    tee.holes.forEach((h, i) => {
+      const inp = document.getElementById(`hole-par-${i}`);
+      if (inp && h.par) inp.value = h.par;
+    });
+  }
+}
+
+function escQ(s) { return (s||'').replace(/'/g, "\'").replace(/"/g, '&quot;'); }
+
+// Close search results when clicking outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('.course-search-wrap')) {
+    const r = document.getElementById('api-course-results');
+    if (r) r.style.display = 'none';
+  }
+});
+
+// Reset search UI when modal closes
+function resetCourseSearchUI() {
+  const inp = document.getElementById('api-course-search');
+  const results = document.getElementById('api-course-results');
+  const teeWrap = document.getElementById('tee-picker-wrap');
+  if (inp) inp.value = '';
+  if (results) { results.innerHTML = ''; results.style.display = 'none'; }
+  if (teeWrap) teeWrap.style.display = 'none';
+  _apiTees = [];
+}
+
 </script>
 </body>
 </html>

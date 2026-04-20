@@ -1796,7 +1796,15 @@ function searchGHIN() {
 
 function saveCourse() {
   const isManual = document.getElementById('modal-tab-manual').style.display !== 'none';
-  if (!isManual) { closeModal('add-course-modal'); return; }
+  if (!isManual) {
+    // If we have a selected tee from API, switch to manual and continue
+    if (_selectedTee || document.getElementById('course-name').value.trim()) {
+      switchModalTab('manual');
+    } else {
+      alert('Please select a course from the search results, then click Add Course again. Or use the Enter Manually tab.');
+    }
+    return;
+  }
   const name = document.getElementById('course-name').value.trim();
   const rating = parseFloat(document.getElementById('course-rating').value);
   const slope = parseInt(document.getElementById('course-slope').value);
@@ -1985,31 +1993,7 @@ function debounceCourseSearch(val) {
   _searchTimer = setTimeout(() => runCourseSearch_withComplex(val), 400);
 }
 
-// (replaced by runCourseSearch_withComplex below)
-async function runCourseSearch(q) {
-  const results = document.getElementById('api-course-results');
-  try {
-    const res = await fetch(`${PROXY}?action=search&q=${encodeURIComponent(q)}`);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Search failed');
 
-    const courses = data.courses || [];
-    if (!courses.length) {
-      results.innerHTML = '<div class="course-search-status">No courses found — try a different name or enter manually below.</div>';
-      return;
-    }
-    results.innerHTML = courses.slice(0, 10).map(c => {
-      const loc = c.location ? [c.location.city, c.location.state, c.location.country].filter(Boolean).join(', ') : '';
-      return `<div class="course-result-item" onclick="selectApiCourse(${c.id}, '${escQ(c.club_name)}', '${escQ(loc)}')">
-        <div class="course-result-name">${c.club_name}</div>
-        <div class="course-result-location">${loc}</div>
-      </div>`;
-    }).join('');
-  } catch(e) {
-    results.innerHTML = `<div class="course-search-status">Search unavailable — please enter manually below.</div>`;
-    console.error('Course search error:', e);
-  }
-}
 
 async function selectApiCourse(id, name, location) {
   // Hide results, fill name field
@@ -2017,6 +2001,8 @@ async function selectApiCourse(id, name, location) {
   document.getElementById('api-course-search').value = name;
   document.getElementById('course-name').value = name;
   document.getElementById('course-location').value = location;
+  // Pre-switch to manual so user can see populated fields
+  switchModalTab('manual');
 
   // Fetch full course details for tees
   const teeWrap = document.getElementById('tee-picker-wrap');
@@ -2356,12 +2342,6 @@ async function runCourseSearch_withComplex(q) {
   }
 }
 
-function handleCxCheck(cb) {
-  const idx = parseInt(cb.dataset.idx);
-  const c = window._searchedCourses && window._searchedCourses[idx];
-  if (!c) return;
-  toggleComplexSelect(c.id, c.club_name, null);
-}
 
 function selectApiCourse_idx(idx) {
   const c = window._searchedCourses && window._searchedCourses[idx];

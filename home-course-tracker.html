@@ -1590,9 +1590,45 @@ function renderJournal(courseId) {
 // ════════════════════════════════════════
 function populateRoundModal() {
   const sel = document.getElementById('round-course');
-  sel.innerHTML = '<option value="">— Select course —</option>' + state.courses.map(c=>`<option value="${c.id}">${c.complexName ? c.complexName+' – ' : ''}${c.name}</option>`).join('');
+  let opts = '<option value="">— Select course —</option>';
+
+  // Group complexes, show combos; standalone courses shown normally
+  const complexMap = {};
+  const standalone = [];
+  state.courses.forEach(c => {
+    if (c.isComplex) {
+      if (!complexMap[c.complexId]) complexMap[c.complexId] = {name:c.complexName,nines:[]};
+      complexMap[c.complexId].nines.push(c);
+    } else standalone.push(c);
+  });
+
+  Object.values(complexMap).forEach(cx => {
+    const nines = cx.nines;
+    // Generate all ordered pairs (A+B, B+C, A+C for 3 nines)
+    for (let i=0;i<nines.length;i++) {
+      for (let j=0;j<nines.length;j++) {
+        if (i===j) continue;
+        const comboId = 'combo__' + nines[i].id + '__' + nines[j].id;
+        opts += '<option value="' + comboId + '">' + cx.name + ' — ' + nines[i].name + ' / ' + nines[j].name + '</option>';
+      }
+    }
+  });
+
+  standalone.forEach(c => {
+    opts += '<option value="' + c.id + '">' + c.name + '</option>';
+  });
+
+  sel.innerHTML = opts;
   document.getElementById('round-date').value = new Date().toISOString().split('T')[0];
-  if (state.activeCourseId) sel.value = state.activeCourseId;
+  // Pre-select active course combo if possible
+  const active = state.activeCourseId;
+  if (active && active.startsWith('combo__')) {
+    sel.value = active;
+  } else if (active) {
+    // Find first combo containing this nine
+    const combo = [...sel.options].find(o => o.value.includes(active));
+    if (combo) sel.value = combo.value;
+  }
   onRoundCourseChange();
 }
 
@@ -1600,14 +1636,36 @@ let currentPenaltyHole = null;
 let pendingPenalties = {};
 
 function onRoundCourseChange_original() {
-  const courseId = document.getElementById('round-course').value;
-  const course = state.courses.find(c=>c.id===courseId);
+  const val = document.getElementById('round-course').value;
   const wrap = document.getElementById('round-scorecard-wrap');
   const jWrap = document.getElementById('round-journal-wrap');
-  if (!course) { wrap.style.display='none'; jWrap.style.display='none'; return; }
-  wrap.style.display=''; jWrap.style.display='';
+  if (!val) { wrap.style.display='none'; jWrap.style.display='none'; return; }
   pendingPenalties = {};
-  buildScorecard(course);
+  wrap.style.display=''; jWrap.style.display='';
+  if (val.startsWith('combo__')) {
+    const parts = val.split('__');
+    const nine1 = state.courses.find(c=>c.id===parts[1]);
+    const nine2 = state.courses.find(c=>c.id===parts[2]);
+    if (!nine1||!nine2) return;
+    // Stitch into an 18-hole pseudo-course
+    const combined = {
+      id: val,
+      name: nine1.name + ' / ' + nine2.name,
+      complexName: nine1.complexName,
+      holes: 18,
+      holePars: [...(nine1.holePars||Array(9).fill(4)), ...(nine2.holePars||Array(9).fill(4))],
+      rating: ((nine1.rating||36)+(nine2.rating||36)),
+      slope: Math.round(((nine1.slope||113)+(nine2.slope||113))/2),
+      par: (nine1.par||36)+(nine2.par||36),
+      nines: [nine1.name, nine2.name],
+      isCombo: true, nine1Id: nine1.id, nine2Id: nine2.id
+    };
+    buildScorecard(combined);
+  } else {
+    const course = state.courses.find(c=>c.id===val);
+    if (!course) return;
+    buildScorecard(course);
+  }
 }
 
 function buildScorecard(course) {
@@ -1873,6 +1931,36 @@ function renderAll() {
   document.getElementById('empty-state').style.display = hasCourse ? 'none' : '';
   document.getElementById('course-view').style.display = hasCourse ? '' : 'none';
   if (!hasCourse) return;
+  if (isComplex) {
+    // Show complex summary in the stats tab area
+    const statsArea = document.getElementById('tab-stats');
+    if (statsArea) {
+      const complexHtml = renderComplexView(courseId);
+      // Insert complex summary before the tee filter
+      const existing = statsArea.querySelector('.complex-summary');
+      if (existing) existing.remove();
+      const div = document.createElement('div');
+      div.className = 'complex-summary';
+      div.innerHTML = complexHtml || '';
+      statsArea.insertBefore(div, statsArea.firstChild);
+    }
+    return;
+  }
+  // For combos or regular courses, resolve to a real course for display
+  let displayCourse = state.courses.find(c=>c.id===courseId);
+  if (isCombo) {
+    const parts = courseId.split('__');
+    const nine1 = state.courses.find(c=>c.id===parts[1]);
+    const nine2 = state.courses.find(c=>c.id===parts[2]);
+    if (nine1&&nine2) displayCourse = {
+      id:courseId, name:nine1.name+' / '+nine2.name,
+      holes:18, holePars:[...(nine1.holePars||Array(9).fill(4)),...(nine2.holePars||Array(9).fill(4))],
+      rating:(nine1.rating||36)+(nine2.rating||36),
+      slope:Math.round(((nine1.slope||113)+(nine2.slope||113))/2),
+      par:(nine1.par||36)+(nine2.par||36), isCombo:true
+    };
+  }
+  if (!displayCourse) return;
   renderSummaryCards(courseId);
   renderStatsTable(courseId);
   renderScorecardDisplay(courseId);
@@ -2378,6 +2466,109 @@ function handleCxCheck(cb) {
     _complexSelectedCourses.splice(existing, 1);
   }
   updateComplexBar();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// COMPLEX VIEW
+// ══════════════════════════════════════════════════════════════════════
+function selectComplex(complexId) {
+  state.activeCourseId = complexId;
+  saveState();
+  renderAll();
+}
+
+function getComplexNines(complexId) {
+  return state.courses.filter(c => c.complexId === complexId);
+}
+
+function getComplexCombos(complexId) {
+  const nines = getComplexNines(complexId);
+  const combos = [];
+  for (let i=0;i<nines.length;i++) {
+    for (let j=0;j<nines.length;j++) {
+      if (i===j) continue;
+      combos.push({
+        id: 'combo__'+nines[i].id+'__'+nines[j].id,
+        label: nines[i].name+' / '+nines[j].name,
+        nine1: nines[i], nine2: nines[j]
+      });
+    }
+  }
+  return combos;
+}
+
+function getComboRounds(comboId) {
+  // Match exact combo OR reversed combo (North/West = West/North for stats)
+  const parts = comboId.split('__');
+  const [,a,b] = parts;
+  const reversed = 'combo__'+b+'__'+a;
+  return state.rounds.filter(r => r.courseId===comboId || r.courseId===reversed);
+}
+
+function renderComplexView(complexId) {
+  const nines = getComplexNines(complexId);
+  if (!nines.length) return;
+  const facilityName = nines[0].complexName;
+  const combos = getComplexCombos(complexId);
+
+  // Build combined hole pars for each combo
+  let html = '<div style="padding:1rem 0;">';
+
+  // Summary cards per combo
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:2rem;">';
+  combos.forEach(combo => {
+    const rounds = getComboRounds(combo.id);
+    const scores = rounds.map(r => r.scores.reduce((s,v)=>s+(v||0),0)).filter(s=>s>0);
+    const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : '—';
+    const best = scores.length ? Math.min(...scores) : '—';
+    const par = (combo.nine1.par||36)+(combo.nine2.par||36);
+    html += `<div class="stat-card" style="cursor:pointer;" onclick="setActiveCombo('${combo.id}')">
+      <div class="stat-label">${combo.label}</div>
+      <div class="stat-value">${avg}</div>
+      <div style="font-size:.72rem;color:var(--text-muted);">avg · par ${par} · ${rounds.length} round${rounds.length!==1?'s':''} · best ${best}</div>
+    </div>`;
+  });
+  html += '</div>';
+
+  // Per-nine breakdown
+  html += '<h3 style="font-family:var(--serif);font-size:1.1rem;color:var(--green-deep);margin-bottom:1rem;">Nine-by-Nine Breakdown</h3>';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2rem;">';
+  nines.forEach(nine => {
+    // Get all rounds that include this nine
+    const nineRounds = state.rounds.filter(r =>
+      r.courseId.includes(nine.id) && r.scores && r.scores.length >= 9
+    );
+    // Extract just the 9 holes for this nine
+    const nineScores = nineRounds.map(r => {
+      const parts = r.courseId.split('__');
+      const isFirst = parts[1] === nine.id;
+      const slice = isFirst ? r.scores.slice(0,9) : r.scores.slice(9,18);
+      return slice.reduce((s,v)=>s+(v||0),0);
+    }).filter(s=>s>0);
+    const avg = nineScores.length ? (nineScores.reduce((a,b)=>a+b,0)/nineScores.length).toFixed(1) : '—';
+    const par = nine.par || 36;
+    html += `<div class="stat-card">
+      <div class="stat-label">${nine.name} Nine</div>
+      <div class="stat-value">${avg}</div>
+      <div style="font-size:.72rem;color:var(--text-muted);">avg · par ${par} · ${nineScores.length} round${nineScores.length!==1?'s':''}</div>
+    </div>`;
+  });
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+function setActiveCombo(comboId) {
+  // Show round history for this specific combo
+  state.activeCourseId = comboId;
+  renderAll();
+}
+
+function getRoundsForCourse(courseId) {
+  if (!courseId) return [];
+  if (courseId.startsWith('combo__')) return getComboRounds(courseId);
+  // Regular course or nine
+  return state.rounds.filter(r => r.courseId === courseId);
 }
 
 

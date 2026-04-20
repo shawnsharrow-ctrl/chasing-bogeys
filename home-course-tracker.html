@@ -859,10 +859,11 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
 <div class="modal-overlay" id="enter-round-modal">
   <div class="modal" style="max-width:780px;">
     <div class="modal-header">
-      <h3 class="modal-title">Enter a Round</h3>
+      <h3 class="modal-title" id="round-modal-title">Enter a Round</h3>
       <button class="modal-close" onclick="closeModal('enter-round-modal')">✕</button>
     </div>
     <div class="modal-body">
+      <input type="hidden" id="edit-round-id" value="">
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Course</label>
@@ -1074,9 +1075,24 @@ function clearLocalData() {
 // ════════════════════════════════════════
 function openModal(id) {
   document.getElementById(id).classList.add('open');
-  if (id === 'enter-round-modal') populateRoundModal();
+  if (id === 'enter-round-modal') {
+    // Only call populateRoundModal for fresh rounds (not edits)
+    if (!document.getElementById('edit-round-id')?.value) {
+      document.getElementById('round-modal-title').textContent = 'Enter a Round';
+      document.getElementById('delete-round-btn').style.display = 'none';
+      populateRoundModal();
+    }
+  }
 }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  if (id === 'enter-round-modal') {
+    document.getElementById('edit-round-id').value = '';
+    document.getElementById('round-modal-title').textContent = 'Enter a Round';
+    const delBtn = document.getElementById('delete-round-btn');
+    if (delBtn) delBtn.style.display = 'none';
+  }
+}
 document.querySelectorAll('.modal-overlay').forEach(m => {
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
 });
@@ -1948,7 +1964,22 @@ function saveRound() {
   });
   const tee = getSelectedTeeData();
   const newRound = { id:'r'+Date.now(), courseId, date, scores, putts, chips, pitches, penalties, girs, journal, tee };
-  state.rounds.push(newRound);
+  const editId = document.getElementById('edit-round-id').value;
+  if (editId) {
+    // Edit mode — replace existing round
+    const idx = state.rounds.findIndex(function(r){return r.id===editId;});
+    if (idx !== -1) {
+      newRound.id = editId; // keep original ID
+      state.rounds[idx] = newRound;
+    } else {
+      state.rounds.push(newRound);
+    }
+  } else {
+    state.rounds.push(newRound);
+  }
+  // Reset edit mode
+  document.getElementById('edit-round-id').value = '';
+  document.getElementById('round-modal-title').textContent = 'Enter a Round';
   saveState();
   saveRoundToSupabase(newRound);
   closeModal('enter-round-modal');
@@ -2962,15 +2993,84 @@ function updateCxComboName(pairIdx) {
 }
 
 function openEditRound(roundId) {
-  const r = state.rounds.find(r=>r.id===roundId);
+  const r = state.rounds.find(function(r){return r.id===roundId;});
   if (!r) return;
-  const total = r.scores.reduce((a,b)=>a+b,0);
-  const action = confirm('Round on ' + formatDate(r.date) + ' — Score: ' + total + '\n\nClick OK to delete this round, or Cancel to keep it.');
-  if (action) {
-    state.rounds = state.rounds.filter(r=>r.id!==roundId);
-    saveState();
-    renderAll();
+
+  // Set edit mode
+  document.getElementById('edit-round-id').value = roundId;
+  document.getElementById('round-modal-title').textContent = 'Edit Round';
+
+  // Populate modal via populateRoundModal first (sets up dropdowns)
+  populateRoundModal();
+
+  // Set course and date
+  const sel = document.getElementById('round-course');
+  sel.value = r.courseId;
+  if (!sel.value) {
+    // Combo not pre-selected — find it
+    const opt = [...sel.options].find(o=>o.value===r.courseId);
+    if (opt) sel.value = r.courseId;
   }
+  document.getElementById('round-date').value = r.date;
+
+  // Trigger course change to build scorecard
+  onRoundCourseChange();
+
+  // Populate scores after scorecard is built (slight delay for DOM)
+  setTimeout(function() {
+    if (r.scores) r.scores.forEach(function(s,i) {
+      const inp = document.getElementById('sc-score-'+i);
+      if (inp) inp.value = s || '';
+    });
+    if (r.putts) r.putts.forEach(function(v,i) {
+      const inp = document.getElementById('sc-putts-'+i);
+      if (inp) inp.value = v || '';
+    });
+    if (r.chips) r.chips.forEach(function(v,i) {
+      const inp = document.getElementById('sc-chips-'+i);
+      if (inp) inp.value = v || '';
+    });
+    if (r.pitches) r.pitches.forEach(function(v,i) {
+      const inp = document.getElementById('sc-pitches-'+i);
+      if (inp) inp.value = v || '';
+    });
+    if (r.girs) r.girs.forEach(function(v,i) {
+      const cb = document.getElementById('sc-gir-'+i);
+      if (cb) cb.checked = !!v;
+    });
+    // Journal
+    if (r.journal) {
+      const jt = document.getElementById('j-tee');       if(jt) jt.value = r.journal.tee||'';
+      const ja = document.getElementById('j-approach');  if(ja) ja.value = r.journal.approach||'';
+      const js = document.getElementById('j-short');     if(js) js.value = r.journal.short||'';
+      const jn = document.getElementById('j-notes');     if(jn) jn.value = r.journal.notes||'';
+      const jsh = document.getElementById('j-share');    if(jsh) jsh.checked = r.journal.share||false;
+    }
+    // Tee
+    if (r.tee && r.tee.tee_name) {
+      const ts = document.getElementById('round-tee-select');
+      if (ts) {
+        const opt = [...ts.options].find(o=>o.text.includes(r.tee.tee_name));
+        if (opt) ts.value = opt.value;
+      }
+    }
+    updateAllTotals();
+  }, 150);
+
+  document.getElementById('delete-round-btn').style.display = 'block';
+  openModal('enter-round-modal');
+}
+
+function deleteEditRound() {
+  const roundId = document.getElementById('edit-round-id').value;
+  if (!roundId) return;
+  const r = state.rounds.find(function(r){return r.id===roundId;});
+  if (!r) return;
+  if (!confirm('Delete this round on ' + formatDate(r.date) + '? This cannot be undone.')) return;
+  state.rounds = state.rounds.filter(function(r){return r.id!==roundId;});
+  saveState();
+  closeModal('enter-round-modal');
+  renderAll();
 }
 
 

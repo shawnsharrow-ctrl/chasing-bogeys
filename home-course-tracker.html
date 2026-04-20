@@ -1109,16 +1109,35 @@ function renderSidebar() {
 
   let html = '';
   Object.values(complexMap).forEach(cx => {
-    html += `<div style="font-size:0.7rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);padding:0.5rem 0.5rem 0.25rem;">${cx.name} <span class="course-complex-badge">27</span></div>`;
-    cx.courses.forEach(c => {
-      const rounds = state.rounds.filter(r=>r.courseId===c.id).length;
-      const active = state.activeCourseId === c.id;
-      html += `<div class="course-item ${active?'active':''}">
-        <span onclick="selectCourse('${c.id}')" style="flex:1;cursor:pointer;">${c.name}</span>
-        <span class="course-round-count">${rounds}r</span>
-        <button class="course-edit-btn" onclick="openEditCourse('${c.id}')" title="Edit">✎</button>
-      </div>`;
-    });
+    const complexId = cx.courses[0].complexId;
+    const totalRounds = state.rounds.filter(r => cx.courses.some(c => r.courseId.includes(c.id))).length;
+    const holeCount = cx.courses.reduce((s,c) => s+(c.holes||9), 0);
+    const isActive = state.activeCourseId===complexId || cx.courses.some(c=>state.activeCourseId===c.id||state.activeCourseId.includes(c.id));
+    const namedCombos = cx.courses[0].namedCombos || [];
+    // Clickable complex header
+    html += `<div class="course-item ${isActive?'active':''}" style="cursor:pointer;" onclick="selectComplex('${complexId}')">
+      <span style="flex:1;font-weight:500;">${cx.name} <span style="font-size:.65rem;color:var(--gold);font-weight:400;">${holeCount}-hole</span></span>
+      <span class="course-round-count">${totalRounds}r</span>
+    </div>`;
+    // Named 18-hole combos as sub-items
+    if (namedCombos.length) {
+      namedCombos.forEach(combo => {
+        const comboRounds = getComboRounds(combo.id).length;
+        const comboActive = state.activeCourseId === combo.id;
+        html += `<div class="course-item ${comboActive?'active':''}" style="padding-left:1.25rem;cursor:pointer;" onclick="state.activeCourseId='${combo.id}';saveState();renderAll();">
+          <span style="flex:1;font-size:.82rem;color:var(--text-mid);">${combo.name}</span>
+          <span class="course-round-count" style="font-size:.7rem;">${comboRounds}r</span>
+        </div>`;
+      });
+    } else {
+      // Fallback: show individual nines with edit buttons
+      cx.courses.forEach(c => {
+        html += `<div class="course-item" style="padding-left:1.25rem;">
+          <span style="flex:1;font-size:.82rem;color:var(--text-muted);">${c.name}</span>
+          <button class="course-edit-btn" onclick="openEditCourse('${c.id}')" title="Edit">✎</button>
+        </div>`;
+      });
+    }
   });
   standalone.forEach(c => {
     const rounds = state.rounds.filter(r=>r.courseId===c.id).length;
@@ -1943,8 +1962,10 @@ function renderAll() {
   updateGHINStatus();
   const courseId = state.activeCourseId;
   updateTeeFilter(courseId);
-  updateTeeFilter(courseId);
-  const hasCourse = !!courseId && state.courses.find(c=>c.id===courseId);
+  const isComplex = courseId && !state.courses.find(c=>c.id===courseId) &&
+    state.courses.some(c=>c.complexId===courseId);
+  const isCombo = courseId && courseId.startsWith('combo__');
+  const hasCourse = !!courseId && (!!state.courses.find(c=>c.id===courseId) || isComplex || isCombo);
   document.getElementById('empty-state').style.display = hasCourse ? 'none' : '';
   document.getElementById('course-view').style.display = hasCourse ? '' : 'none';
   if (!hasCourse) return;
@@ -2873,4 +2894,21 @@ function updateCxComboName(pairIdx) {
 </div>
 
 </body>
-</html>
+</html>  Object.values(complexMap).forEach(function(cx) {
+    const nines = cx.nines;
+    const namedCombos = nines[0] && nines[0].namedCombos;
+    if (namedCombos && namedCombos.length) {
+      // Use only the named combos — no reversed duplicates
+      namedCombos.forEach(function(combo) {
+        opts += '<option value="' + combo.id + '">' + cx.name + ' — ' + combo.name + '</option>';
+      });
+    } else {
+      // Fallback: unique unordered pairs only
+      for (var i=0;i<nines.length;i++) {
+        for (var j=i+1;j<nines.length;j++) {
+          var comboId = 'combo__' + nines[i].id + '__' + nines[j].id;
+          opts += '<option value="' + comboId + '">' + cx.name + ' — ' + nines[i].name + '/' + nines[j].name + '</option>';
+        }
+      }
+    }
+  });

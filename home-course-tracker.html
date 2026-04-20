@@ -2241,12 +2241,77 @@ async function showComplexModal() {
     facilityInput.value = _complexSelectedCourses[0].name.replace(/\s*(north|south|east|west|front|back|nine|\d+)/gi,'').trim();
   }
   const labelsDiv = document.getElementById('cx-nine-labels');
-  labelsDiv.innerHTML = _complexSelectedCourses.map(function(c,i) {
-    return '<div class="form-group" style="margin-bottom:.75rem;">' +
-      '<label class="form-label">Nine label for &ldquo;' + c.name + '&rdquo;</label>' +
-      '<input class="form-input" type="text" id="cx-label-' + i + '" placeholder="e.g. North, West, South" value="' + guessNineLabel(c.name) + '">' +
-      '</div>';
-  }).join('');
+  const n = _complexSelectedCourses.length;
+
+  // Build all unique unordered pairs
+  const pairs = [];
+  for (let i=0;i<n;i++) {
+    for (let j=i+1;j<n;j++) {
+      pairs.push([i,j]);
+    }
+  }
+
+  let labelsHtml = '';
+  pairs.forEach(function(pair, pi) {
+    const a = _complexSelectedCourses[pair[0]];
+    const b = _complexSelectedCourses[pair[1]];
+    const aPars = a.apiData && a.apiData.tees && a.apiData.tees.male && a.apiData.tees.male[0] && a.apiData.tees.male[0].holes
+      ? a.apiData.tees.male[0].holes.map(function(h){return h.par;}) : Array(9).fill(4);
+    const bPars = b.apiData && b.apiData.tees && b.apiData.tees.male && b.apiData.tees.male[0] && b.apiData.tees.male[0].holes
+      ? b.apiData.tees.male[0].holes.map(function(h){return h.par;}) : Array(9).fill(4);
+    const aTotal = aPars.reduce(function(s,v){return s+v;},0);
+    const bTotal = bPars.reduce(function(s,v){return s+v;},0);
+
+    function parsRow(pars, label) {
+      return '<tr><td style="font-size:.7rem;color:var(--text-muted);padding:.2rem .4rem;font-weight:500;">' + label + '</td>'
+        + pars.map(function(p,i){return '<td style="text-align:center;font-size:.75rem;padding:.2rem .3rem;color:var(--text-mid);">' + p + '</td>';}).join('')
+        + '<td style="text-align:center;font-size:.75rem;padding:.2rem .4rem;font-weight:600;color:var(--green-deep);">' + (label==='Par'?pars.reduce(function(s,v){return s+v;},0):'') + '</td>'
+        + '</tr>';
+    }
+
+    function holeRow() {
+      let r = '<tr><td style="font-size:.7rem;color:var(--text-muted);padding:.2rem .4rem;font-weight:500;">Hole</td>';
+      for (let h=1;h<=9;h++) r += '<td style="text-align:center;font-size:.7rem;padding:.2rem .3rem;color:var(--text-muted);">' + h + '</td>';
+      r += '<td style="text-align:center;font-size:.7rem;padding:.2rem .4rem;color:var(--text-muted);">Tot</td></tr>';
+      return r;
+    }
+
+    labelsHtml += '<div style="border:1px solid var(--cream-dark);border-radius:8px;padding:1rem;margin-bottom:1.25rem;">'
+
+      // 18-hole course name
+      + '<div class="form-group" style="margin-bottom:.75rem;">'
+      + '<label class="form-label">18-Hole Course Name</label>'
+      + '<input class="form-input" type="text" id="cx-combo-name-' + pi + '" placeholder="e.g. North/West" value="' + guessNineLabel(a.name) + '/' + guessNineLabel(b.name) + '">'
+      + '</div>'
+
+      // Front nine
+      + '<div style="margin-bottom:.75rem;">'
+      + '<div style="font-size:.72rem;font-weight:500;color:var(--text-muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.08em;">Front Nine</div>'
+      + '<table style="width:100%;border-collapse:collapse;background:var(--cream);border-radius:6px;overflow:hidden;margin-bottom:.4rem;">'
+      + holeRow() + parsRow(aPars, 'Par')
+      + '</table>'
+      + '<input class="form-input" type="text" id="cx-front-label-' + pi + '" placeholder="Nine name (e.g. North)" value="' + guessNineLabel(a.name) + '" style="font-size:.85rem;">'
+      + '</div>'
+
+      // Back nine
+      + '<div>'
+      + '<div style="font-size:.72rem;font-weight:500;color:var(--text-muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.08em;">Back Nine</div>'
+      + '<table style="width:100%;border-collapse:collapse;background:var(--cream);border-radius:6px;overflow:hidden;margin-bottom:.4rem;">'
+      + holeRow() + parsRow(bPars, 'Par')
+      + '</table>'
+      + '<input class="form-input" type="text" id="cx-back-label-' + pi + '" placeholder="Nine name (e.g. West)" value="' + guessNineLabel(b.name) + '" style="font-size:.85rem;">'
+      + '</div>'
+
+      + '</div>';
+
+    // Store pair indices for saveComplex
+    labelsHtml += '<input type="hidden" id="cx-pair-' + pi + '" value="' + pair[0] + ',' + pair[1] + '">';
+  });
+
+  // Store pair count for saveComplex
+  labelsHtml += '<input type="hidden" id="cx-pair-count" value="' + pairs.length + '">';
+  labelsDiv.innerHTML = labelsHtml;
+
   closeModal('add-course-modal');
   openModal('complex-modal');
 }
@@ -2259,30 +2324,47 @@ function guessNineLabel(name) {
 function saveComplex() {
   const facilityName = document.getElementById('cx-facility-name').value.trim();
   if (!facilityName) { alert('Please enter a facility name.'); return; }
+
+  const pairCount = parseInt(document.getElementById('cx-pair-count')?.value || '0');
+  if (!pairCount) { alert('No course pairs found.'); return; }
+
   const complexId = 'cx' + Date.now();
+
+  // Build a nine object for each selected course, named by the labels given
+  // We need to reconcile: multiple pairs may label the same nine differently
+  // Use first label encountered for each course index
+  const nineLabels = {};
+  for (let pi=0; pi<pairCount; pi++) {
+    const pairVal = document.getElementById('cx-pair-' + pi)?.value || '';
+    const [ai, bi] = pairVal.split(',').map(Number);
+    const frontLabel = (document.getElementById('cx-front-label-' + pi)?.value || '').trim();
+    const backLabel  = (document.getElementById('cx-back-label-'  + pi)?.value || '').trim();
+    if (!nineLabels[ai]) nineLabels[ai] = frontLabel || ('Nine ' + (ai+1));
+    if (!nineLabels[bi]) nineLabels[bi] = backLabel  || ('Nine ' + (bi+1));
+  }
+
   _complexSelectedCourses.forEach(function(c, i) {
-    const nineLabel = (document.getElementById('cx-label-' + i) || {}).value || ('Nine ' + (i+1));
     const maleTee = c.apiData && c.apiData.tees && c.apiData.tees.male && c.apiData.tees.male[0];
     const course = {
       id: 'c' + Date.now() + i,
-      name: nineLabel.trim(),
+      name: nineLabels[i] || ('Nine ' + (i+1)),
       location: c.apiData && c.apiData.location ? [c.apiData.location.city, c.apiData.location.state].filter(Boolean).join(', ') : '',
-      rating: maleTee ? maleTee.course_rating : 36,
-      slope:  maleTee ? maleTee.slope_rating  : 113,
-      par:    maleTee ? maleTee.par_total      : 36,
+      rating: maleTee ? (maleTee.front_course_rating || maleTee.course_rating / 2 || 36) : 36,
+      slope:  maleTee ? (maleTee.slope_rating || 113) : 113,
+      par:    maleTee ? (maleTee.par_total || 36) : 36,
       holes:  9,
       holePars: maleTee && maleTee.holes ? maleTee.holes.slice(0,9).map(function(h){return h.par;}) : Array(9).fill(4),
       isComplex: true,
       complexName: facilityName,
       complexId: complexId,
-      nines: ['Front','Back'],
       apiId: c.id,
       apiTees: c.apiData && c.apiData.tees ? c.apiData.tees : {}
     };
     state.courses.push(course);
     saveCourseToSupabase(course);
   });
-  if (!state.activeCourseId && state.courses.length) state.activeCourseId = state.courses[0].id;
+
+  if (!state.activeCourseId && state.courses.length) state.activeCourseId = complexId;
   saveState();
   _complexSelectedCourses = [];
   closeModal('complex-modal');
@@ -2578,7 +2660,7 @@ function getRoundsForCourse(courseId) {
      MODAL: LINK AS COMPLEX
 ══════════════════════════════════════════ -->
 <div class="modal-overlay" id="complex-modal">
-  <div class="modal" style="max-width:560px;">
+  <div class="modal" style="max-width:720px;">
     <div class="modal-header">
       <h3 class="modal-title">Link as Multi-Nine Complex</h3>
       <button class="modal-close" onclick="closeModal('complex-modal')">✕</button>

@@ -1173,9 +1173,10 @@ function switchTab(tab) {
 // ════════════════════════════════════════
 // SUMMARY CARDS
 // ════════════════════════════════════════
-function renderSummaryCards(courseId) {
-  const course = state.courses.find(c=>c.id===courseId);
-  const rounds  = state.rounds.filter(r=>r.courseId===courseId);
+function renderSummaryCards(courseOrId) {
+  const course = typeof courseOrId==='object' ? courseOrId : state.courses.find(c=>c.id===courseOrId);
+  const courseId = course ? course.id : courseOrId;
+  const rounds  = getRoundsForCourse(courseId);
   const el      = document.getElementById('summary-cards');
   if (!el) return;
   if (!rounds.length) { el.innerHTML = ''; return; }
@@ -2024,14 +2025,14 @@ function renderAll() {
     };
   }
   if (!displayCourse) return;
-  renderSummaryCards(courseId);
-  renderStatsTable(courseId);
-  renderScorecardDisplay(courseId);
-  renderRoundsList(courseId);
-  renderHandicap(courseId);
-  renderPenalties(courseId);
-  renderShortGame(courseId);
-  renderJournal(courseId);
+  renderSummaryCards(displayCourse);
+  renderStatsTable(displayCourse);
+  renderScorecardDisplay(displayCourse);
+  renderRoundsList(displayCourse.id);
+  renderHandicap(displayCourse);
+  renderPenalties(displayCourse.id);
+  renderShortGame(displayCourse.id);
+  renderJournal(displayCourse.id);
 }
 
 // ════════════════════════════════════════

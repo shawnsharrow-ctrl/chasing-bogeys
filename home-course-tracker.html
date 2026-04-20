@@ -1218,12 +1218,13 @@ function renderSummaryCards(courseOrId) {
   const high       = Math.max(...allScores);
   const last5      = allScores.slice(-5);
   const last5avg   = last5.reduce((a,b)=>a+b,0) / last5.length;
-  // Course handicap index
-  const chi = calcHandicap(course);
-  const chiDisplay = chi !== null && chi !== undefined ? chi.toFixed(1) : '—';
-  // GHIN index from settings
-  const ghinIndex = state.settings?.ghinIndex || null;
-  const handicapDisplay = ghinIndex ? ghinIndex.toFixed(1) : chiDisplay;
+  // Course handicap index (calculated from rounds here)
+  const chiResult = calcHandicap(course);
+  const chiDisplay = chiResult ? chiResult.index.toFixed(1) : '—';
+  // Use manual handicap override from settings if provided
+  const hcpOverride = state.settings?.hcpOverride;
+  const handicapDisplay = hcpOverride ? parseFloat(hcpOverride).toFixed(1) : chiDisplay;
+  const handicapSub = hcpOverride ? 'Manual override' : (chiResult ? 'Course differential' : 'Need 3+ rounds');
 
   el.innerHTML = `
     <div class="summary-card highlight">
@@ -1244,7 +1245,7 @@ function renderSummaryCards(courseOrId) {
     <div class="summary-card">
       <div class="summary-label">Handicap Index</div>
       <div class="summary-val">${handicapDisplay}</div>
-      <div class="summary-sub">${ghinIndex ? 'GHIN #'+state.settings.ghinNum : 'Course differential'}</div>
+      <div class="summary-sub">${handicapSub}</div>
     </div>
   `;
 }
@@ -1357,7 +1358,14 @@ function renderScorecardDisplay(courseOrId) {
     }
     function penaltyCell(h) {
       if (!h.penalties) return `<td>—</td>`;
-      return `<td class="sc-pen">⚑ ${h.penalties}</td>`;
+      const avg = (h.penalties / (rounds.length||1)).toFixed(2);
+      return `<td class="sc-pen" title="${h.penalties} total">⚑ ${avg}</td>`;
+    }
+    function girCell(h) {
+      if (h.girPct === null || h.girPct === undefined) return `<td>—</td>`;
+      const pct = h.girPct.toFixed(0);
+      const cls = h.girPct >= 50 ? 'stat-under' : h.girPct <= 20 ? 'stat-over' : '';
+      return `<td class="${cls}">${pct}%</td>`;
     }
 
     // OUT column totals
@@ -1365,7 +1373,10 @@ function renderScorecardDisplay(courseOrId) {
     const trendOut   = holes.every(h=>h.trending!==null) ? holes.reduce((s,h)=>s+h.trending,0).toFixed(1) : '—';
     const blowupOut  = holes.every(h=>h.blowup!==null)  ? (holes.reduce((s,h)=>s+h.blowup,0)/holes.length).toFixed(0)+'%' : '—';
     const underOut   = holes.every(h=>h.underPar!==null) ? (holes.reduce((s,h)=>s+h.underPar,0)/holes.length).toFixed(0)+'%' : '—';
-    const penOut     = holes.reduce((s,h)=>s+h.penalties,0) || '—';
+    const penTotal   = holes.reduce((s,h)=>s+h.penalties,0);
+    const penOut     = penTotal ? (penTotal/(rounds.length||1)).toFixed(2) : '—';
+    const girHoles   = holes.filter(h=>h.girPct!==null&&h.girPct!==undefined);
+    const girOut     = girHoles.length ? (girHoles.reduce((s,h)=>s+h.girPct,0)/girHoles.length).toFixed(0)+'%' : '—';
 
     const holeHeader = holeNums.map(n=>`<th>${n}</th>`).join('') + `<th class="sc-out">${label === nineLabels[0] ? 'OUT' : 'IN'}</th>`;
 
@@ -1414,9 +1425,14 @@ function renderScorecardDisplay(courseOrId) {
               <td class="sc-out">${underOut}</td>
             </tr>
             <tr>
-              <td>Penalties ★</td>
+              <td>Penalties/Rnd ★</td>
               ${holes.map(h=>cell(h, penaltyCell)).join('')}
               <td class="sc-out">${penOut !== '—' ? '⚑ '+penOut : '—'}</td>
+            </tr>
+            <tr>
+              <td>GIR %</td>
+              ${holes.map(h=>girCell(h)).join('')}
+              <td class="sc-out">${girOut}</td>
             </tr>
           </tbody>
         </table>

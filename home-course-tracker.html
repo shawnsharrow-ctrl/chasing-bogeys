@@ -1394,30 +1394,57 @@ function renderScorecardDisplay(courseOrId) {
 // ROUNDS LIST
 // ════════════════════════════════════════
 function renderRoundsList(courseId) {
-  const course = state.courses.find(c=>c.id===courseId);
+  // Resolve course — works for real courses and combo IDs
+  let course = state.courses.find(c=>c.id===courseId);
+  if (!course && courseId && courseId.startsWith('combo__')) {
+    const parts = courseId.split('__');
+    const n1 = state.courses.find(c=>c.id===parts[1]);
+    const n2 = state.courses.find(c=>c.id===parts[2]);
+    if (n1&&n2) course = {
+      id: courseId,
+      name: n1.name+' / '+n2.name,
+      par: (n1.holePars||Array(9).fill(4)).reduce((s,v)=>s+v,0) +
+           (n2.holePars||Array(9).fill(4)).reduce((s,v)=>s+v,0),
+      holePars: [...(n1.holePars||Array(9).fill(4)),...(n2.holePars||Array(9).fill(4))]
+    };
+  }
   if (!course) return;
-  const rounds = state.rounds.filter(r=>r.courseId===courseId).sort((a,b)=>b.date.localeCompare(a.date));
+  const rounds = getRoundsForCourse(courseId).sort((a,b)=>b.date.localeCompare(a.date));
   const el = document.getElementById('rounds-list');
-  if (!rounds.length) { el.innerHTML = '<div class="empty-state" style="padding:2rem;"><p class="empty-sub">No rounds yet for this course.</p></div>'; return; }
+  if (!rounds.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:2rem;"><p class="empty-sub">No rounds yet for this course.</p></div>';
+    return;
+  }
   el.innerHTML = rounds.map(r => {
     const total = r.scores.reduce((a,b)=>a+b,0);
     const diff = total - course.par;
     const hasJournal = r.journal && (r.journal.tee || r.journal.approach || r.journal.short);
+    const putts = r.putts ? r.putts.reduce((a,b)=>a+b,0) : null;
+    const girs  = r.girs  ? r.girs.filter(Boolean).length : null;
     return `<div class="round-card">
-      <div>
-        <div class="round-date">${formatDate(r.date)}</div>
-        <div class="round-course">${course.name}</div>
-        <div class="round-nine">${course.location || ''}</div>
-        ${hasJournal ? '<div class="round-journal-icon">📓 Journal entry</div>' : ''}
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div class="round-date">${formatDate(r.date)}</div>
+          <div class="round-course">${course.name}</div>
+          ${r.tee ? `<div style="font-size:.72rem;color:var(--text-muted);">${r.tee.tee_name||''}</div>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:.75rem;">
+          <div style="text-align:right;">
+            <div class="round-score">${total}</div>
+            <div class="round-diff ${diff>0?'over':'under'}">${diff>0?'+':''}${diff} to par</div>
+          </div>
+          <button onclick="openEditRound('${r.id}')" style="background:none;border:1px solid var(--cream-dark);border-radius:6px;padding:.3rem .6rem;cursor:pointer;font-size:.75rem;color:var(--text-muted);">Edit</button>
+        </div>
       </div>
-      <div></div>
-      <div>
-        <div class="round-score">${total}</div>
-        <div class="round-diff ${diff>0?'over':'under'}">${diff>0?'+':''}${diff} to par</div>
-      </div>
+      ${putts!==null||girs!==null ? `<div style="display:flex;gap:1.5rem;margin-top:.5rem;font-size:.75rem;color:var(--text-muted);">
+        ${putts!==null?`<span>🏌 ${putts} putts</span>`:''}
+        ${girs!==null?`<span>🎯 ${girs}/18 GIR</span>`:''}
+        ${hasJournal?`<span>📓 Journal</span>`:''}
+      </div>` : ''}
     </div>`;
   }).join('');
 }
+
 
 function formatDate(d) {
   if (!d) return '';
@@ -2932,6 +2959,18 @@ function updateCxComboName(pairIdx) {
     return inp ? inp.value.trim() : '';
   }).filter(Boolean);
   nameInput.value = names.join('/');
+}
+
+function openEditRound(roundId) {
+  const r = state.rounds.find(r=>r.id===roundId);
+  if (!r) return;
+  const total = r.scores.reduce((a,b)=>a+b,0);
+  const action = confirm('Round on ' + formatDate(r.date) + ' — Score: ' + total + '\n\nClick OK to delete this round, or Cancel to keep it.');
+  if (action) {
+    state.rounds = state.rounds.filter(r=>r.id!==roundId);
+    saveState();
+    renderAll();
+  }
 }
 
 

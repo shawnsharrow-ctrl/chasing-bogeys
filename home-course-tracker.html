@@ -1640,12 +1640,18 @@ function populateRoundModal() {
 
   Object.values(complexMap).forEach(cx => {
     const nines = cx.nines;
-    // Generate all ordered pairs (A+B, B+C, A+C for 3 nines)
-    for (let i=0;i<nines.length;i++) {
-      for (let j=0;j<nines.length;j++) {
-        if (i===j) continue;
-        const comboId = 'combo__' + nines[i].id + '__' + nines[j].id;
-        opts += '<option value="' + comboId + '">' + cx.name + ' — ' + nines[i].name + ' / ' + nines[j].name + '</option>';
+    const namedCombos = nines[0] && nines[0].namedCombos;
+    if (namedCombos && namedCombos.length) {
+      namedCombos.forEach(combo => {
+        opts += '<option value="' + combo.id + '">' + cx.name + ' — ' + combo.name + '</option>';
+      });
+    } else {
+      // Fallback: unique unordered pairs only
+      for (let i=0;i<nines.length;i++) {
+        for (let j=i+1;j<nines.length;j++) {
+          const comboId = 'combo__' + nines[i].id + '__' + nines[j].id;
+          opts += '<option value="' + comboId + '">' + cx.name + ' — ' + nines[i].name + '/' + nines[j].name + '</option>';
+        }
       }
     }
   });
@@ -1969,17 +1975,18 @@ function renderAll() {
   document.getElementById('empty-state').style.display = hasCourse ? 'none' : '';
   document.getElementById('course-view').style.display = hasCourse ? '' : 'none';
   if (!hasCourse) return;
+
+  // Always clear complex summary first
+  const statsArea = document.getElementById('tab-stats');
+  const existingComplex = statsArea && statsArea.querySelector('.complex-summary');
+  if (existingComplex) existingComplex.remove();
+
   if (isComplex) {
     // Show complex summary in the stats tab area
-    const statsArea = document.getElementById('tab-stats');
     if (statsArea) {
-      const complexHtml = renderComplexView(courseId);
-      // Insert complex summary before the tee filter
-      const existing = statsArea.querySelector('.complex-summary');
-      if (existing) existing.remove();
       const div = document.createElement('div');
       div.className = 'complex-summary';
-      div.innerHTML = complexHtml || '';
+      div.innerHTML = renderComplexView(courseId) || '';
       statsArea.insertBefore(div, statsArea.firstChild);
     }
     return;
@@ -2654,55 +2661,63 @@ function getComboRounds(comboId) {
 
 function renderComplexView(complexId) {
   const nines = getComplexNines(complexId);
-  if (!nines.length) return;
+  if (!nines.length) return '';
   const facilityName = nines[0].complexName;
-  const combos = getComplexCombos(complexId);
+  // Use named combos if available, fall back to computed pairs
+  const namedCombos = nines[0].namedCombos || getComplexCombos(complexId).map(c=>({id:c.id,name:c.label}));
 
-  // Build combined hole pars for each combo
-  let html = '<div style="padding:1rem 0;">';
+  function statCard(label, avg, best, par, rounds, onclick) {
+    const click = onclick ? 'style="cursor:pointer;" onclick="' + onclick + '"' : '';
+    return '<div class="stat-card" ' + click + '>'
+      + '<div class="stat-label">' + label + '</div>'
+      + '<div class="stat-value">' + avg + '</div>'
+      + '<div style="font-size:.72rem;color:var(--text-muted);">avg · par ' + par + ' · ' + rounds + ' round' + (rounds!==1?'s':'') + ' · best ' + best + '</div>'
+      + '</div>';
+  }
 
-  // Summary cards per combo
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:2rem;">';
-  combos.forEach(combo => {
+  // Left column: 18-hole combos
+  let comboCards = '';
+  namedCombos.forEach(function(combo) {
     const rounds = getComboRounds(combo.id);
-    const scores = rounds.map(r => r.scores.reduce((s,v)=>s+(v||0),0)).filter(s=>s>0);
+    const scores = rounds.map(r=>r.scores.reduce((s,v)=>s+(v||0),0)).filter(s=>s>0);
     const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : '—';
     const best = scores.length ? Math.min(...scores) : '—';
-    const par = (combo.nine1.par||36)+(combo.nine2.par||36);
-    html += `<div class="stat-card" style="cursor:pointer;" onclick="setActiveCombo('${combo.id}')">
-      <div class="stat-label">${combo.label}</div>
-      <div class="stat-value">${avg}</div>
-      <div style="font-size:.72rem;color:var(--text-muted);">avg · par ${par} · ${rounds.length} round${rounds.length!==1?'s':''} · best ${best}</div>
-    </div>`;
+    // Get par from the two nines
+    const parts = combo.id.split('__');
+    const n1 = state.courses.find(c=>c.id===parts[1]);
+    const n2 = state.courses.find(c=>c.id===parts[2]);
+    const par = (n1?n1.par||36:36) + (n2?n2.par||36:36);
+    const clickFn = "state.activeCourseId='" + combo.id + "';saveState();renderAll();";
+    comboCards += statCard(combo.name, avg, best, par, rounds.length, clickFn);
   });
-  html += '</div>';
 
-  // Per-nine breakdown
-  html += '<h3 style="font-family:var(--serif);font-size:1.1rem;color:var(--green-deep);margin-bottom:1rem;">Nine-by-Nine Breakdown</h3>';
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2rem;">';
-  nines.forEach(nine => {
-    // Get all rounds that include this nine
-    const nineRounds = state.rounds.filter(r =>
-      r.courseId.includes(nine.id) && r.scores && r.scores.length >= 9
-    );
-    // Extract just the 9 holes for this nine
-    const nineScores = nineRounds.map(r => {
+  // Right column: individual nines
+  let nineCards = '';
+  nines.forEach(function(nine) {
+    const nineRounds = state.rounds.filter(r=>r.courseId.includes(nine.id) && r.scores && r.scores.length>=9);
+    const nineScores = nineRounds.map(function(r) {
       const parts = r.courseId.split('__');
-      const isFirst = parts[1] === nine.id;
-      const slice = isFirst ? r.scores.slice(0,9) : r.scores.slice(9,18);
-      return slice.reduce((s,v)=>s+(v||0),0);
+      const isFirst = parts[1]===nine.id;
+      return (isFirst?r.scores.slice(0,9):r.scores.slice(9,18)).reduce((s,v)=>s+(v||0),0);
     }).filter(s=>s>0);
     const avg = nineScores.length ? (nineScores.reduce((a,b)=>a+b,0)/nineScores.length).toFixed(1) : '—';
-    const par = nine.par || 36;
-    html += `<div class="stat-card">
-      <div class="stat-label">${nine.name} Nine</div>
-      <div class="stat-value">${avg}</div>
-      <div style="font-size:.72rem;color:var(--text-muted);">avg · par ${par} · ${nineScores.length} round${nineScores.length!==1?'s':''}</div>
-    </div>`;
+    const best = nineScores.length ? Math.min(...nineScores) : '—';
+    nineCards += statCard(nine.name + ' Nine', avg, best, nine.par||36, nineScores.length, null);
   });
-  html += '</div>';
-  html += '</div>';
-  return html;
+
+  return '<div style="padding:.5rem 0;">'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start;">'
+    +   '<div>'
+    +     '<h3 style="font-family:var(--serif);font-size:1rem;color:var(--green-deep);margin-bottom:.75rem;">18-Hole Courses</h3>'
+    +     '<div style="display:flex;flex-direction:column;gap:.75rem;">' + comboCards + '</div>'
+    +     '<p style="font-size:.72rem;color:var(--text-muted);margin-top:.5rem;">Click a course to view its stats.</p>'
+    +   '</div>'
+    +   '<div>'
+    +     '<h3 style="font-family:var(--serif);font-size:1rem;color:var(--green-deep);margin-bottom:.75rem;">Individual Nines</h3>'
+    +     '<div style="display:flex;flex-direction:column;gap:.75rem;">' + nineCards + '</div>'
+    +   '</div>'
+    + '</div>'
+    + '</div>';
 }
 
 function setActiveCombo(comboId) {

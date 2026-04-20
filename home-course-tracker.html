@@ -475,6 +475,14 @@ footer { background: var(--green-deep); padding: 1.5rem 2rem; display: flex; jus
   content:''; flex:1; height:1px; background:var(--cream-dark);
 }
 
+
+.course-edit-btn {
+  background:none;border:none;cursor:pointer;color:var(--text-muted);
+  font-size:.85rem;padding:.1rem .3rem;opacity:0;transition:opacity .15s;flex-shrink:0;
+}
+.course-item:hover .course-edit-btn { opacity:1; }
+.course-item { display:flex;align-items:center;gap:.25rem; }
+
 </style>
 
 <!-- Supabase -->
@@ -492,6 +500,7 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
     <li><a href="index.html#tools">Tools</a></li>
     <li><a href="index.html#blog">Blog</a></li>
     <li><a href="index.html#about">About</a></li>
+    <li id="nav-auth-item"><a href="register.html">Sign In</a></li>
   </ul>
 </nav>
 
@@ -730,13 +739,18 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
             <div class="course-search-results" id="api-course-results"></div>
           </div>
         </div>
-        <div class="tee-picker" id="tee-picker-wrap">
-          <label>Select your tee</label>
-          <select id="tee-picker-select" onchange="applySelectedTee()">
-            <option value="">— Choose tee —</option>
-          </select>
+
+        <!-- Complex linking -->
+        <div id="complex-link-bar" style="display:none;margin-top:.75rem;padding:.75rem 1rem;background:var(--cream);border-radius:8px;border:1px solid var(--cream-dark);">
+          <div style="font-size:.8rem;font-weight:500;color:var(--text-mid);margin-bottom:.5rem;">
+            <span id="complex-selected-count">0</span> courses selected —
+            <a onclick="clearComplexSelection()" style="color:var(--text-muted);cursor:pointer;font-weight:400;">clear</a>
+          </div>
+          <button class="btn-primary" style="width:100%;font-size:.85rem;padding:.6rem;" onclick="showComplexModal()">
+            Link as 27-Hole Complex →
+          </button>
         </div>
-        <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;line-height:1.6;">
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.75rem;line-height:1.6;">
           Can't find your course? Use the <strong>Enter Manually</strong> tab instead.
         </p>
       </div>
@@ -842,6 +856,19 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
         <div class="form-group">
           <label class="form-label">Date</label>
           <input class="form-input" type="date" id="round-date">
+        </div>
+      </div>
+
+      <!-- Tee selector -->
+      <div id="round-tee-wrap" style="display:none;margin-bottom:1rem;">
+        <div class="form-group">
+          <label class="form-label">Tee played from</label>
+          <select class="form-input" id="round-tee-select" onchange="onTeeChange()">
+            <option value="">— Select tee —</option>
+          </select>
+          <p style="font-size:.72rem;color:var(--text-muted);margin-top:.3rem;">
+            Selecting your tee ensures accurate handicap differentials and lets you filter stats by tee.
+          </p>
         </div>
       </div>
 
@@ -1069,18 +1096,20 @@ function renderSidebar() {
     cx.courses.forEach(c => {
       const rounds = state.rounds.filter(r=>r.courseId===c.id).length;
       const active = state.activeCourseId === c.id;
-      html += `<div class="course-item ${active?'active':''}" onclick="selectCourse('${c.id}')">
-        <span>${c.name}</span>
-        <span class="course-round-count">${rounds} ${rounds===1?'round':'rounds'}</span>
+      html += `<div class="course-item ${active?'active':''}">
+        <span onclick="selectCourse('${c.id}')" style="flex:1;cursor:pointer;">${c.name}</span>
+        <span class="course-round-count">${rounds}r</span>
+        <button class="course-edit-btn" onclick="openEditCourse('${c.id}')" title="Edit">✎</button>
       </div>`;
     });
   });
   standalone.forEach(c => {
     const rounds = state.rounds.filter(r=>r.courseId===c.id).length;
     const active = state.activeCourseId === c.id;
-    html += `<div class="course-item ${active?'active':''}" onclick="selectCourse('${c.id}')">
-      <span>${c.name}</span>
-      <span class="course-round-count">${rounds} ${rounds===1?'round':'rounds'}</span>
+    html += `<div class="course-item ${active?'active':''}">
+      <span onclick="selectCourse('${c.id}')" style="flex:1;cursor:pointer;">${c.name}</span>
+      <span class="course-round-count">${rounds}r</span>
+      <button class="course-edit-btn" onclick="openEditCourse('${c.id}')" title="Edit">✎</button>
     </div>`;
   });
   list.innerHTML = html;
@@ -1570,7 +1599,7 @@ function populateRoundModal() {
 let currentPenaltyHole = null;
 let pendingPenalties = {};
 
-function onRoundCourseChange() {
+function onRoundCourseChange_original() {
   const courseId = document.getElementById('round-course').value;
   const course = state.courses.find(c=>c.id===courseId);
   const wrap = document.getElementById('round-scorecard-wrap');
@@ -1742,7 +1771,8 @@ function saveRound() {
     notes: document.getElementById('j-notes')?.value||'',
     share: document.getElementById('j-share')?.checked||false
   };
-  const newRound = { id:'r'+Date.now(), courseId, date, scores, putts, chips, pitches, penalties, journal };
+  const tee = getSelectedTeeData();
+  const newRound = { id:'r'+Date.now(), courseId, date, scores, putts, chips, pitches, penalties, journal, tee };
   state.rounds.push(newRound);
   saveState();
   saveRoundToSupabase(newRound);
@@ -1834,6 +1864,8 @@ function renderAll() {
   renderSidebar();
   updateGHINStatus();
   const courseId = state.activeCourseId;
+  updateTeeFilter(courseId);
+  updateTeeFilter(courseId);
   const hasCourse = !!courseId && state.courses.find(c=>c.id===courseId);
   document.getElementById('empty-state').style.display = hasCourse ? 'none' : '';
   document.getElementById('course-view').style.display = hasCourse ? '' : 'none';
@@ -1936,6 +1968,8 @@ loadState();
 // Set today's date
 document.getElementById('round-date') && (document.getElementById('round-date').value = new Date().toISOString().split('T')[0]);
 initApp();
+updateNavAuth();
+updateNavAuth();
 
 // ── COURSE SEARCH VIA NETLIFY FUNCTION ───────────────────────────────
 const PROXY = '/.netlify/functions/golf-course-search';
@@ -1948,9 +1982,10 @@ function debounceCourseSearch(val) {
   if (val.length < 3) { results.style.display = 'none'; return; }
   results.style.display = 'block';
   results.innerHTML = '<div class="course-search-status">Searching…</div>';
-  _searchTimer = setTimeout(() => runCourseSearch(val), 400);
+  _searchTimer = setTimeout(() => runCourseSearch_withComplex(val), 400);
 }
 
+// (replaced by runCourseSearch_withComplex below)
 async function runCourseSearch(q) {
   const results = document.getElementById('api-course-results');
   try {
@@ -2062,7 +2097,363 @@ function resetCourseSearchUI() {
   if (teeWrap) teeWrap.style.display = 'none';
   _apiTees = [];
 }
+// ══════════════════════════════════════════════════════════════════════
+// AUTH-AWARE NAV
+// ══════════════════════════════════════════════════════════════════════
+async function updateNavAuth() {
+  if (typeof _supabase === 'undefined') return;
+  const { data:{ session } } = await _supabase.auth.getSession();
+  const item = document.getElementById('nav-auth-item');
+  if (!item) return;
+  if (session) {
+    const { data:profile } = await _supabase.from('profiles').select('username').eq('id', session.user.id).single();
+    const name = profile?.username || session.user.email.split('@')[0];
+    item.innerHTML = `<span style="font-size:.8rem;color:var(--green-light);cursor:default;">Signed in as <strong>${name}</strong></span>`;
+  } else {
+    item.innerHTML = '<a href="register.html">Sign In</a>';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// COMPLEX LINKING
+// ══════════════════════════════════════════════════════════════════════
+let _complexSelectedCourses = [];
+
+function toggleComplexSelect(id, name, apiData) {
+  const idx = _complexSelectedCourses.findIndex(c => c.id === id);
+  if (idx === -1) _complexSelectedCourses.push({id, name, apiData});
+  else _complexSelectedCourses.splice(idx, 1);
+  updateComplexBar();
+}
+
+function updateComplexBar() {
+  const bar = document.getElementById('complex-link-bar');
+  const count = document.getElementById('complex-selected-count');
+  const btn = bar ? bar.querySelector('button') : null;
+  if (!bar || !count) return;
+  const n = _complexSelectedCourses.length;
+  bar.style.display = n >= 2 ? '' : 'none';
+  count.textContent = n;
+  if (btn) {
+    const label = n === 2 ? 'Link as 18-Hole Complex →' : n === 3 ? 'Link as 27-Hole Complex →' : 'Link ' + n + ' Courses as Complex →';
+    btn.textContent = label;
+  }
+}
+
+function clearComplexSelection() {
+  _complexSelectedCourses = [];
+  document.querySelectorAll('.cx-checkbox').forEach(cb => cb.checked = false);
+  updateComplexBar();
+}
+
+function showComplexModal() {
+  const facilityInput = document.getElementById('cx-facility-name');
+  if (facilityInput && _complexSelectedCourses.length) {
+    facilityInput.value = _complexSelectedCourses[0].name.replace(/\s*(north|south|east|west|front|back|nine|\d+)/gi,'').trim();
+  }
+  const labelsDiv = document.getElementById('cx-nine-labels');
+  labelsDiv.innerHTML = _complexSelectedCourses.map(function(c,i) {
+    return '<div class="form-group" style="margin-bottom:.75rem;">' +
+      '<label class="form-label">Nine label for &ldquo;' + c.name + '&rdquo;</label>' +
+      '<input class="form-input" type="text" id="cx-label-' + i + '" placeholder="e.g. North, West, South" value="' + guessNineLabel(c.name) + '">' +
+      '</div>';
+  }).join('');
+  closeModal('add-course-modal');
+  openModal('complex-modal');
+}
+
+function guessNineLabel(name) {
+  const match = name.match(/\b(north|south|east|west|front|back|lake|ridge|canyon|links|pines|oaks|river)\b/i);
+  return match ? match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase() : '';
+}
+
+function saveComplex() {
+  const facilityName = document.getElementById('cx-facility-name').value.trim();
+  if (!facilityName) { alert('Please enter a facility name.'); return; }
+  const complexId = 'cx' + Date.now();
+  _complexSelectedCourses.forEach(function(c, i) {
+    const nineLabel = (document.getElementById('cx-label-' + i) || {}).value || ('Nine ' + (i+1));
+    const maleTee = c.apiData && c.apiData.tees && c.apiData.tees.male && c.apiData.tees.male[0];
+    const course = {
+      id: 'c' + Date.now() + i,
+      name: nineLabel.trim(),
+      location: c.apiData && c.apiData.location ? [c.apiData.location.city, c.apiData.location.state].filter(Boolean).join(', ') : '',
+      rating: maleTee ? maleTee.course_rating : 36,
+      slope:  maleTee ? maleTee.slope_rating  : 113,
+      par:    maleTee ? maleTee.par_total      : 36,
+      holes:  9,
+      holePars: maleTee && maleTee.holes ? maleTee.holes.slice(0,9).map(function(h){return h.par;}) : Array(9).fill(4),
+      isComplex: true,
+      complexName: facilityName,
+      complexId: complexId,
+      nines: ['Front','Back'],
+      apiId: c.id,
+      apiTees: c.apiData && c.apiData.tees ? c.apiData.tees : {}
+    };
+    state.courses.push(course);
+    saveCourseToSupabase(course);
+  });
+  if (!state.activeCourseId && state.courses.length) state.activeCourseId = state.courses[0].id;
+  saveState();
+  _complexSelectedCourses = [];
+  closeModal('complex-modal');
+  renderAll();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// EDIT / DELETE COURSE
+// ══════════════════════════════════════════════════════════════════════
+function openEditCourse(id) {
+  const c = state.courses.find(function(c){return c.id===id;});
+  if (!c) return;
+  document.getElementById('edit-course-id').value        = id;
+  document.getElementById('edit-course-name').value      = c.name;
+  document.getElementById('edit-course-location').value  = c.location || '';
+  document.getElementById('edit-course-rating').value    = c.rating || '';
+  document.getElementById('edit-course-slope').value     = c.slope  || '';
+  document.getElementById('edit-course-par').value       = c.par    || '';
+  document.getElementById('edit-course-holepars').value  = (c.holePars||[]).join(',');
+  openModal('edit-course-modal');
+}
+
+function saveEditCourse() {
+  const id = document.getElementById('edit-course-id').value;
+  const c = state.courses.find(function(c){return c.id===id;});
+  if (!c) return;
+  c.name     = document.getElementById('edit-course-name').value.trim()     || c.name;
+  c.location = document.getElementById('edit-course-location').value.trim();
+  c.rating   = parseFloat(document.getElementById('edit-course-rating').value) || c.rating;
+  c.slope    = parseInt(document.getElementById('edit-course-slope').value)    || c.slope;
+  c.par      = parseInt(document.getElementById('edit-course-par').value)      || c.par;
+  const parsStr = document.getElementById('edit-course-holepars').value;
+  if (parsStr) {
+    const pars = parsStr.split(',').map(function(p){return parseInt(p.trim());}).filter(function(p){return !isNaN(p);});
+    if (pars.length === c.holes) c.holePars = pars;
+  }
+  saveState();
+  saveCourseToSupabase(c);
+  closeModal('edit-course-modal');
+  renderAll();
+}
+
+function deleteCourse() {
+  const id = document.getElementById('edit-course-id').value;
+  const c = state.courses.find(function(c){return c.id===id;});
+  if (!c) return;
+  const roundCount = state.rounds.filter(function(r){return r.courseId===id;}).length;
+  const msg = roundCount > 0
+    ? 'Delete "' + c.name + '"? This will also delete all ' + roundCount + ' rounds logged for it.'
+    : 'Delete "' + c.name + '"?';
+  if (!confirm(msg)) return;
+  state.rounds  = state.rounds.filter(function(r){return r.courseId!==id;});
+  state.courses = state.courses.filter(function(c){return c.id!==id;});
+  if (state.activeCourseId === id) state.activeCourseId = state.courses.length ? state.courses[0].id : null;
+  saveState();
+  closeModal('edit-course-modal');
+  renderAll();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// TEE SELECTOR IN ROUND MODAL
+// ══════════════════════════════════════════════════════════════════════
+let _roundTees = [];
+
+async function onRoundCourseChange() {
+  onRoundCourseChange_original();
+  const courseId = document.getElementById('round-course').value;
+  const course = state.courses.find(function(c){return c.id===courseId;});
+  const wrap = document.getElementById('round-tee-wrap');
+  const sel  = document.getElementById('round-tee-select');
+  if (!course || !courseId) { if(wrap) wrap.style.display='none'; return; }
+  const tees = course.apiTees || {};
+  const male   = (tees.male   || []).map(function(t){return Object.assign({},t,{gender:'male'});});
+  const female = (tees.female || []).map(function(t){return Object.assign({},t,{gender:'female'});});
+  _roundTees = male.concat(female);
+  if (wrap) wrap.style.display = '';
+  if (!_roundTees.length) {
+    sel.innerHTML = '<option value="">— No tee data —</option>' +
+      ['Black','Blue','White','Red','Gold','Silver','Green'].map(function(t){return '<option value="'+t+'">'+t+'</option>';}).join('');
+  } else {
+    sel.innerHTML = '<option value="">— Select tee —</option>' +
+      _roundTees.map(function(t,i){
+        const g = t.gender==='female' ? '♀ ' : '♂ ';
+        return '<option value="'+i+'">'+g+t.tee_name+' — Par '+t.par_total+' · '+t.course_rating+'/'+t.slope_rating+'</option>';
+      }).join('');
+  }
+}
+
+function getSelectedTeeData() {
+  const sel = document.getElementById('round-tee-select');
+  if (!sel || sel.value === '') return null;
+  const idx = parseInt(sel.value);
+  if (!isNaN(idx) && _roundTees[idx]) return _roundTees[idx];
+  return { tee_name: sel.value };
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// TEE FILTER IN HOLE STATS
+// ══════════════════════════════════════════════════════════════════════
+function updateTeeFilter(courseId) {
+  const sel = document.getElementById('tee-filter-select');
+  if (!sel || !courseId) return;
+  const rounds = state.rounds.filter(function(r){return r.courseId===courseId && r.tee && r.tee.tee_name;});
+  const teeNames = rounds.map(function(r){return r.tee.tee_name;}).filter(function(v,i,a){return a.indexOf(v)===i;}).sort();
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All tees</option>' +
+    teeNames.map(function(t){return '<option value="'+t+'"'+(t===current?' selected':'')+'>'+t+'</option>';}).join('');
+  const countEl = document.getElementById('tee-filter-count');
+  if (countEl) {
+    const filtered = sel.value
+      ? state.rounds.filter(function(r){return r.courseId===courseId && r.tee && r.tee.tee_name===sel.value;}).length
+      : state.rounds.filter(function(r){return r.courseId===courseId;}).length;
+    countEl.textContent = filtered + ' round' + (filtered===1?'':'s');
+  }
+}
+
+function getFilteredRounds(courseId) {
+  const sel = document.getElementById('tee-filter-select');
+  const teeFilter = sel ? sel.value : '';
+  return state.rounds.filter(function(r){
+    return r.courseId===courseId && (!teeFilter || (r.tee && r.tee.tee_name===teeFilter));
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// SEARCH WITH COMPLEX CHECKBOXES
+// ══════════════════════════════════════════════════════════════════════
+async function runCourseSearch_withComplex(q) {
+  const results = document.getElementById('api-course-results');
+  try {
+    const res = await fetch(PROXY + '?action=search&q=' + encodeURIComponent(q));
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Search failed');
+    const courses = data.courses || [];
+    if (!courses.length) {
+      results.innerHTML = '<div class="course-search-status">No courses found — try a different name or enter manually below.</div>';
+      return;
+    }
+    // Store courses for checkbox handler to access
+    window._searchedCourses = courses;
+    let html = '';
+    courses.slice(0,10).forEach(function(c, ci) {
+      const loc = c.location ? [c.location.city, c.location.state, c.location.country].filter(Boolean).join(', ') : '';
+      const isSelected = _complexSelectedCourses.some(function(s){return s.id===c.id;});
+      html += '<div class="course-result-item" style="display:flex;align-items:flex-start;gap:.6rem;padding:.6rem 1rem;">'
+        + '<input type="checkbox" class="cx-checkbox" data-idx="' + ci + '" '
+        + (isSelected ? 'checked' : '')
+        + ' style="margin-top:.35rem;accent-color:var(--green-mid);" onchange="handleCxCheck(this)">'
+        + '<div style="flex:1;cursor:pointer;" onclick="selectApiCourse_idx(' + ci + ')">'
+        +   '<div class="course-result-name">' + c.club_name + '</div>'
+        +   '<div class="course-result-location">' + loc + '</div>'
+        + '</div>'
+        + '<button style="font-size:.7rem;background:none;border:1px solid var(--cream-dark);border-radius:4px;padding:.2rem .5rem;cursor:pointer;color:var(--text-muted);white-space:nowrap;flex-shrink:0;" onclick="selectApiCourse_idx(' + ci + ')">Add &rarr;</button>'
+        + '</div>';
+    });
+    results.innerHTML = html;
+  } catch(e) {
+    results.innerHTML = '<div class="course-search-status">Search unavailable — please enter manually below.</div>';
+    console.error('Course search error:', e);
+  }
+}
+
+function handleCxCheck(cb) {
+  const idx = parseInt(cb.dataset.idx);
+  const c = window._searchedCourses && window._searchedCourses[idx];
+  if (!c) return;
+  toggleComplexSelect(c.id, c.club_name, null);
+}
+
+function selectApiCourse_idx(idx) {
+  const c = window._searchedCourses && window._searchedCourses[idx];
+  if (!c) return;
+  const loc = c.location ? [c.location.city, c.location.state, c.location.country].filter(Boolean).join(', ') : '';
+  selectApiCourse(c.id, c.club_name, loc);
+}
+
+
+function handleCxCheck(cb) {
+  const id = parseInt(cb.dataset.cid);
+  const name = cb.dataset.cname;
+  toggleComplexSelect(id, name, null);
+}
+
 
 </script>
+
+<!-- ══════════════════════════════════════════
+     MODAL: LINK AS COMPLEX
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="complex-modal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Link as Multi-Nine Complex</h3>
+      <button class="modal-close" onclick="closeModal('complex-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Complex Name <span style="font-weight:300;color:var(--text-muted);">(the facility)</span></label>
+        <input class="form-input" type="text" id="cx-facility-name" placeholder="e.g. Avalon Golf Links">
+      </div>
+      <div id="cx-nine-labels" style="margin-bottom:1rem;">
+        <!-- Populated dynamically per selected course -->
+      </div>
+      <p style="font-size:.75rem;color:var(--text-muted);line-height:1.6;">
+        Each nine will be saved as a separate course within the complex. You can enter rounds for any combination of two nines.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('complex-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveComplex()">Save Complex</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: EDIT COURSE
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="edit-course-modal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Edit Course</h3>
+      <button class="modal-close" onclick="closeModal('edit-course-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-course-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Course Name</label>
+          <input class="form-input" type="text" id="edit-course-name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Location</label>
+          <input class="form-input" type="text" id="edit-course-location">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Course Rating</label>
+          <input class="form-input" type="number" id="edit-course-rating" step="0.1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Slope</label>
+          <input class="form-input" type="number" id="edit-course-slope">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Par</label>
+          <input class="form-input" type="number" id="edit-course-par">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Hole Pars <span style="font-weight:300;font-size:.75rem;color:var(--text-muted);">(comma separated, e.g. 4,3,5,4,3,5,4,3,5)</span></label>
+        <input class="form-input" type="text" id="edit-course-holepars" placeholder="4,4,3,5,4,3,5,4,4">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" style="color:var(--red);border-color:var(--red);" onclick="deleteCourse()">Delete Course</button>
+      <button class="btn-primary" onclick="saveEditCourse()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

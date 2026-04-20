@@ -948,9 +948,12 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
         </div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-secondary" onclick="closeModal('enter-round-modal')">Cancel</button>
-      <button class="btn-primary btn-gold" onclick="saveRound()">Save Round</button>
+    <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center;">
+      <button id="delete-round-btn" class="btn-secondary" style="color:var(--red);border-color:var(--red);display:none;" onclick="deleteEditRound()">Delete Round</button>
+      <div style="display:flex;gap:.75rem;margin-left:auto;">
+        <button class="btn-secondary" onclick="closeModal('enter-round-modal')">Cancel</button>
+        <button class="btn-primary btn-gold" onclick="saveRound()">Save Round</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3057,7 +3060,7 @@ function openEditRound(roundId) {
     updateAllTotals();
   }, 150);
 
-  document.getElementById('delete-round-btn').style.display = 'block';
+  const delBtn = document.getElementById('delete-round-btn'); if(delBtn) delBtn.style.display='block';
   openModal('enter-round-modal');
 }
 

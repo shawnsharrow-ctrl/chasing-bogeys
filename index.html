@@ -568,7 +568,7 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
     <li><a href="#tools">Tools</a></li>
     <li><a href="#blog">Blog</a></li>
     <li><a href="#about">About</a></li>
-    <li><a href="register.html">Sign In</a></li>
+    <li id="nav-auth-item"><a href="register.html">Sign In</a></li>
     <li><a href="#tools" class="nav-cta">Get Started</a></li>
   </ul>
 </nav>
@@ -744,5 +744,22 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
   <a href="#">Affiliate Disclosure</a>
 </div>
 
+
+<script>
+// Auth-aware nav
+(async function() {
+  if (typeof _supabase === 'undefined') return;
+  const { data:{ session } } = await _supabase.auth.getSession();
+  const item = document.getElementById('nav-auth-item');
+  if (!item) return;
+  if (session) {
+    const { data:profile } = await _supabase.from('profiles').select('username').eq('id', session.user.id).single();
+    const name = profile?.username || session.user.email.split('@')[0];
+    item.innerHTML = '<span style="font-size:.8rem;color:var(--gold-light);cursor:default;">Signed in as <strong>' + name + '</strong></span>';
+  } else {
+    item.innerHTML = '<a href="register.html">Sign In</a>';
+  }
+})();
+</script>
 </body>
 </html>

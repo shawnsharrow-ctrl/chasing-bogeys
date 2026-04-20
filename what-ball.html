@@ -208,6 +208,12 @@ footer { background:var(--green-deep); padding:2rem 3rem; display:flex; justify-
 .faq-item.open .faq-answer { max-height: 600px; }
 
 </style>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.co', 'sb_publishable_Ce3y0LklIDpmH4SUhPcRTQ_mADVHltd');
+</script>
 </head>
 <body>
 
@@ -217,6 +223,7 @@ footer { background:var(--green-deep); padding:2rem 3rem; display:flex; justify-
     <li><a href="index.html#tools">Tools</a></li>
     <li><a href="index.html#blog">Blog</a></li>
     <li><a href="index.html#about">About</a></li>
+      <li id="nav-auth-item"><a href="register.html">Sign In</a></li>
   </ul>
 </nav>
 
@@ -1061,6 +1068,23 @@ function toggleFAQ(i) {
 // Init FAQ on load
 document.addEventListener('DOMContentLoaded', initFAQ);
 
+</script>
+
+<script>
+// Auth-aware nav
+(async function() {
+  if (typeof _supabase === 'undefined') return;
+  const { data:{ session } } = await _supabase.auth.getSession();
+  const item = document.getElementById('nav-auth-item');
+  if (!item) return;
+  if (session) {
+    const { data:profile } = await _supabase.from('profiles').select('username').eq('id', session.user.id).single();
+    const name = profile?.username || session.user.email.split('@')[0];
+    item.innerHTML = '<span style="font-size:.8rem;color:var(--gold-light);cursor:default;">Signed in as <strong>' + name + '</strong></span>';
+  } else {
+    item.innerHTML = '<a href="register.html">Sign In</a>';
+  }
+})();
 </script>
 </body>
 </html>

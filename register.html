@@ -342,5 +342,22 @@ function hideError(id) {
   if(el) el.style.display = 'none';
 }
 </script>
+
+<script>
+// Auth-aware nav
+(async function() {
+  if (typeof _supabase === 'undefined') return;
+  const { data:{ session } } = await _supabase.auth.getSession();
+  const item = document.getElementById('nav-auth-item');
+  if (!item) return;
+  if (session) {
+    const { data:profile } = await _supabase.from('profiles').select('username').eq('id', session.user.id).single();
+    const name = profile?.username || session.user.email.split('@')[0];
+    item.innerHTML = '<span style="font-size:.8rem;color:var(--gold-light);cursor:default;">Signed in as <strong>' + name + '</strong></span>';
+  } else {
+    item.innerHTML = '<a href="register.html">Sign In</a>';
+  }
+})();
+</script>
 </body>
 </html>

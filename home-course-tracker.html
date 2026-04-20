@@ -1756,15 +1756,16 @@ function buildScorecard(course) {
         const inputType = field === 'score' ? 'number' : 'number';
         const placeholder = field === 'score' ? String(par) : '0';
         const cls = field === 'score' ? 'score-input' : 'putt-input';
-        const extra = field === 'score' ? 'oninput="updateScorecardTotal()"' : '';
+        const extra = field === 'score' ? 'oninput="updateAllTotals()"' : (field !== 'penalty' ? 'oninput="updateAllTotals()"' : '');
         return `<td style="text-align:center;padding:.2rem .3rem;">
           <input class="${cls}" type="number" id="sc-${field}-${absIdx}" min="0" max="${field==='score'?15:9}" placeholder="${placeholder}" tabindex="${tabIdx(absIdx,rowIdx)}" ${extra}>
         </td>`;
       });
-      // OUT column — totals for score row only
-      const outCell = field === 'score'
-        ? `<td style="text-align:center;font-weight:600;background:var(--cream);font-size:.9rem;" id="sc-out-${holeOffset}">&mdash;</td>`
-        : `<td style="background:var(--cream);"></td>`;
+      // OUT column — totals for all tracked fields
+      const outId = `sc-out-${field}-${holeOffset}`;
+      const outCell = field === 'penalty'
+        ? `<td style="text-align:center;background:var(--cream);" id="${outId}">—</td>`
+        : `<td style="text-align:center;font-weight:600;background:var(--cream);font-size:.88rem;" id="${outId}">—</td>`;
       return `<tr>
         <td style="font-size:.72rem;font-weight:500;color:var(--text-muted);padding:.3rem .5rem;">${label}</td>
         ${cells.join('')}
@@ -1794,24 +1795,28 @@ function buildScorecard(course) {
 }
 
 function updateAllTotals() {
-  // Front nine out
-  let frontSum = 0, frontCount = 0;
-  for (let i=0;i<9;i++) {
-    const v = parseInt(document.getElementById('sc-score-'+i)?.value);
-    if(!isNaN(v)){frontSum+=v;frontCount++;}
-  }
-  const frontOut = document.getElementById('sc-out-0');
-  if(frontOut) frontOut.textContent = frontCount ? frontSum : '—';
-
-  // Back nine out
-  let backSum = 0, backCount = 0;
-  for (let i=9;i<18;i++) {
-    const v = parseInt(document.getElementById('sc-score-'+i)?.value);
-    if(!isNaN(v)){backSum+=v;backCount++;}
-  }
-  const backOut = document.getElementById('sc-out-9');
-  if(backOut) backOut.textContent = backCount ? backSum : '—';
-
+  const allFields = ['score','pitches','chips','putts'];
+  const offsets = [0, 9]; // front and back nine start indices
+  offsets.forEach(function(offset) {
+    allFields.forEach(function(field) {
+      let sum = 0, count = 0;
+      for (let i=offset; i<offset+9; i++) {
+        const inp = document.getElementById('sc-' + field + '-' + i);
+        const v = inp ? parseInt(inp.value) : NaN;
+        if (!isNaN(v) && v > 0) { sum += v; count++; }
+      }
+      const outEl = document.getElementById('sc-out-' + field + '-' + offset);
+      if (outEl) outEl.textContent = count ? sum : '—';
+    });
+    // Penalty out — count total penalties for this nine
+    let penSum = 0;
+    for (let i=offset; i<offset+9; i++) {
+      const btn = document.getElementById('pen-btn-' + i);
+      if (btn && btn.dataset.count) penSum += parseInt(btn.dataset.count)||0;
+    }
+    const penOut = document.getElementById('sc-out-penalty-' + offset);
+    if (penOut) penOut.textContent = penSum > 0 ? penSum : '—';
+  });
   updateScorecardTotal();
 }
 
@@ -1856,8 +1861,19 @@ function savePenalty() {
 function saveRound() {
   const courseId = document.getElementById('round-course').value;
   const date = document.getElementById('round-date').value;
-  const course = state.courses.find(c=>c.id===courseId);
-  if (!course || !date) { alert('Please select a course and date.'); return; }
+  if (!courseId || !date) { alert('Please select a course and date.'); return; }
+  // Resolve combo IDs to a pseudo-course for holePars
+  let course = state.courses.find(c=>c.id===courseId);
+  if (!course && courseId.startsWith('combo__')) {
+    const parts = courseId.split('__');
+    const n1 = state.courses.find(c=>c.id===parts[1]);
+    const n2 = state.courses.find(c=>c.id===parts[2]);
+    if (n1 && n2) course = {
+      id: courseId, holes: 18,
+      holePars: [...(n1.holePars||Array(9).fill(4)), ...(n2.holePars||Array(9).fill(4))]
+    };
+  }
+  if (!course) { alert('Please select a course and date.'); return; }
   const scores = course.holePars.map((_,i)=>parseInt(document.getElementById('sc-score-'+i)?.value)||0);
   if (scores.some(s=>s===0)) { if (!confirm('Some holes have no score entered. Save anyway?')) return; }
   const putts = course.holePars.map((_,i)=>parseInt(document.getElementById('sc-putts-'+i)?.value)||0);

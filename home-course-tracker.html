@@ -2040,17 +2040,43 @@ function renderAll() {
 
 // Check auth session and load user data from Supabase
 async function initApp() {
+  // Always load localStorage first as baseline
+  loadState();
+
   const { data: { session } } = await _supabase.auth.getSession();
 
   if (session) {
-    // Logged in — load data from Supabase
     state.userId = session.user.id;
     await loadFromSupabase();
-  } else {
-    // Not logged in — load from localStorage only
-    loadState();
+    // Merge any localStorage rounds/courses not yet in Supabase
+    mergeLocalState();
   }
   renderAll();
+}
+
+function mergeLocalState() {
+  // Load localStorage and merge anything not already in state
+  try {
+    const ls = JSON.parse(localStorage.getItem('cb_hct_v1') || '{}');
+    // Merge courses
+    (ls.courses || []).forEach(function(lc) {
+      if (!state.courses.find(function(c){return c.id===lc.id;})) {
+        state.courses.push(lc);
+      }
+    });
+    // Merge rounds
+    (ls.rounds || []).forEach(function(lr) {
+      if (!state.rounds.find(function(r){return r.id===lr.id;})) {
+        state.rounds.push(lr);
+        // Try to sync to Supabase
+        saveRoundToSupabase(lr);
+      }
+    });
+    // Use localStorage activeCourseId if state doesn't have one
+    if (!state.activeCourseId && ls.activeCourseId) {
+      state.activeCourseId = ls.activeCourseId;
+    }
+  } catch(e) { console.warn('mergeLocalState error:', e); }
 }
 
 async function loadFromSupabase() {

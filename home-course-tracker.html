@@ -1731,13 +1731,16 @@ function buildScorecard(course) {
   // Build horizontal scorecard — holes as columns, fields as rows
   // Tab order goes down each hole (score→pitches→chips→putts) before next hole
   const holes = course.holePars;
-  const rows = ['Score','Pitches','Chips','Putts','Penalty ★'];
-  const fields = ['score','pitches','chips','putts','penalty'];
+  const rows = ['Score','Pitches','Chips','Putts','Penalty ★','GIR ★'];
+  const fields = ['score','pitches','chips','putts','penalty','gir'];
 
   // Calculate tabindex so tabbing goes DOWN a hole before moving right
   // hole 1: score=1, pitches=2, chips=3, putts=4, penalty=5
   // hole 2: score=6, pitches=7, chips=8, putts=9, penalty=10, etc.
-  function tabIdx(holeIdx, rowIdx) { return holeIdx * 5 + rowIdx + 1; }
+  function tabIdx(holeIdx, rowIdx) {
+    // Only score(0), pitches(1), chips(2), putts(3) are tabbable — 4 per hole
+    return holeIdx * 4 + rowIdx + 1;
+  }
 
   function buildNineTable(nineHoles, nineLabel, holeOffset) {
     const holeNums = nineHoles.map((_,i) => i + holeOffset + 1);
@@ -1763,15 +1766,19 @@ function buildScorecard(course) {
         const absIdx = holeOffset + holeIdx;
         if (field === 'penalty') {
           return `<td style="text-align:center;padding:.2rem .3rem;">
-            <button class="penalty-mini-btn" id="pen-btn-${absIdx}" tabindex="${tabIdx(absIdx,rowIdx)}" onclick="openPenaltyModal(${absIdx})">+</button>
+            <button class="penalty-mini-btn" id="pen-btn-${absIdx}" tabindex="-1" onclick="openPenaltyModal(${absIdx})">+</button>
           </td>`;
         }
-        const inputType = field === 'score' ? 'number' : 'number';
+        if (field === 'gir') {
+          return `<td style="text-align:center;padding:.2rem .3rem;">
+            <input type="checkbox" id="sc-gir-${absIdx}" tabindex="-1" style="width:16px;height:16px;accent-color:var(--green-mid);cursor:pointer;">
+          </td>`;
+        }
         const placeholder = field === 'score' ? String(par) : '0';
         const cls = field === 'score' ? 'score-input' : 'putt-input';
-        const extra = field === 'score' ? 'oninput="updateAllTotals()"' : (field !== 'penalty' ? 'oninput="updateAllTotals()"' : '');
+        const tIdx = tabIdx(absIdx, rowIdx);
         return `<td style="text-align:center;padding:.2rem .3rem;">
-          <input class="${cls}" type="number" id="sc-${field}-${absIdx}" min="0" max="${field==='score'?15:9}" placeholder="${placeholder}" tabindex="${tabIdx(absIdx,rowIdx)}" ${extra}>
+          <input class="${cls}" type="number" id="sc-${field}-${absIdx}" min="0" max="${field==='score'?15:9}" placeholder="${placeholder}" tabindex="${tIdx}" oninput="updateAllTotals()">
         </td>`;
       });
       // OUT column — totals for all tracked fields
@@ -1809,7 +1816,7 @@ function buildScorecard(course) {
 
 function updateAllTotals() {
   const allFields = ['score','pitches','chips','putts'];
-  const offsets = [0, 9]; // front and back nine start indices
+  const offsets = [0, 9];
   offsets.forEach(function(offset) {
     allFields.forEach(function(field) {
       let sum = 0, count = 0;
@@ -1821,7 +1828,7 @@ function updateAllTotals() {
       const outEl = document.getElementById('sc-out-' + field + '-' + offset);
       if (outEl) outEl.textContent = count ? sum : '—';
     });
-    // Penalty out — count total penalties for this nine
+    // Penalty out
     let penSum = 0;
     for (let i=offset; i<offset+9; i++) {
       const btn = document.getElementById('pen-btn-' + i);
@@ -1829,6 +1836,14 @@ function updateAllTotals() {
     }
     const penOut = document.getElementById('sc-out-penalty-' + offset);
     if (penOut) penOut.textContent = penSum > 0 ? penSum : '—';
+    // GIR out — count checked boxes
+    let girSum = 0;
+    for (let i=offset; i<offset+9; i++) {
+      const cb = document.getElementById('sc-gir-' + i);
+      if (cb && cb.checked) girSum++;
+    }
+    const girOut = document.getElementById('sc-out-gir-' + offset);
+    if (girOut) girOut.textContent = girSum > 0 ? girSum : '—';
   });
   updateScorecardTotal();
 }
@@ -1900,8 +1915,12 @@ function saveRound() {
     notes: document.getElementById('j-notes')?.value||'',
     share: document.getElementById('j-share')?.checked||false
   };
+  const girs = course.holePars.map((_,i) => {
+    const cb = document.getElementById('sc-gir-'+i);
+    return cb ? cb.checked : false;
+  });
   const tee = getSelectedTeeData();
-  const newRound = { id:'r'+Date.now(), courseId, date, scores, putts, chips, pitches, penalties, journal, tee };
+  const newRound = { id:'r'+Date.now(), courseId, date, scores, putts, chips, pitches, penalties, girs, journal, tee };
   state.rounds.push(newRound);
   saveState();
   saveRoundToSupabase(newRound);
@@ -2994,21 +3013,4 @@ function updateCxComboName(pairIdx) {
 </div>
 
 </body>
-</html>  Object.values(complexMap).forEach(function(cx) {
-    const nines = cx.nines;
-    const namedCombos = nines[0] && nines[0].namedCombos;
-    if (namedCombos && namedCombos.length) {
-      // Use only the named combos — no reversed duplicates
-      namedCombos.forEach(function(combo) {
-        opts += '<option value="' + combo.id + '">' + cx.name + ' — ' + combo.name + '</option>';
-      });
-    } else {
-      // Fallback: unique unordered pairs only
-      for (var i=0;i<nines.length;i++) {
-        for (var j=i+1;j<nines.length;j++) {
-          var comboId = 'combo__' + nines[i].id + '__' + nines[j].id;
-          opts += '<option value="' + comboId + '">' + cx.name + ' — ' + nines[i].name + '/' + nines[j].name + '</option>';
-        }
-      }
-    }
-  });
+</html>

@@ -483,6 +483,23 @@ footer { background: var(--green-deep); padding: 1.5rem 2rem; display: flex; jus
 .course-item:hover .course-edit-btn { opacity:1; }
 .course-item { display:flex;align-items:center;gap:.25rem; }
 
+
+/* ── COMPLEX DRAG ── */
+.cx-nine-drag {
+  background:var(--cream);border:1.5px solid var(--cream-dark);border-radius:7px;
+  padding:.6rem .75rem;cursor:grab;user-select:none;transition:all .15s;
+}
+.cx-nine-drag:hover { border-color:var(--green-mid); }
+.cx-nine-drag.dragging { opacity:.4;cursor:grabbing; }
+.cx-nine-drag .nine-drag-handle {
+  display:inline-flex;align-items:center;gap:.5rem;
+  font-size:.8rem;font-weight:500;color:var(--text-mid);margin-bottom:.4rem;
+}
+.cx-nine-drag .nine-drag-handle span {
+  font-size:.65rem;font-weight:400;background:var(--green-deep);color:var(--cream);
+  padding:.1rem .4rem;border-radius:3px;letter-spacing:.05em;
+}
+
 </style>
 
 <!-- Supabase -->
@@ -2276,6 +2293,8 @@ async function showComplexModal() {
       return r;
     }
 
+    // Build each nine as a draggable card, defaulting to [a, b] order
+    // User can drag to swap front/back
     labelsHtml += '<div style="border:1px solid var(--cream-dark);border-radius:8px;padding:1rem;margin-bottom:1.25rem;">'
 
       // 18-hole course name
@@ -2284,30 +2303,20 @@ async function showComplexModal() {
       + '<input class="form-input" type="text" id="cx-combo-name-' + pi + '" placeholder="e.g. North/West" value="' + guessNineLabel(a.name) + '/' + guessNineLabel(b.name) + '">'
       + '</div>'
 
-      // Front nine
-      + '<div style="margin-bottom:.75rem;">'
-      + '<div style="font-size:.72rem;font-weight:500;color:var(--text-muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.08em;">Front Nine</div>'
-      + '<table style="width:100%;border-collapse:collapse;background:var(--cream);border-radius:6px;overflow:hidden;margin-bottom:.4rem;">'
-      + holeRow() + parsRow(aPars, 'Par')
-      + '</table>'
-      + '<input class="form-input" type="text" id="cx-front-label-' + pi + '" placeholder="Nine name (e.g. North)" value="' + guessNineLabel(a.name) + '" style="font-size:.85rem;">'
-      + '</div>'
+      // Instruction
+      + '<div style="font-size:.72rem;color:var(--text-muted);margin-bottom:.6rem;">Drag the nines into the correct front/back order to match your scorecard.</div>'
 
-      // Back nine
-      + '<div>'
-      + '<div style="font-size:.72rem;font-weight:500;color:var(--text-muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.08em;">Back Nine</div>'
-      + '<table style="width:100%;border-collapse:collapse;background:var(--cream);border-radius:6px;overflow:hidden;margin-bottom:.4rem;">'
-      + holeRow() + parsRow(bPars, 'Par')
-      + '</table>'
-      + '<input class="form-input" type="text" id="cx-back-label-' + pi + '" placeholder="Nine name (e.g. West)" value="' + guessNineLabel(b.name) + '" style="font-size:.85rem;">'
+      // Draggable nine list
+      + '<div id="cx-pair-list-' + pi + '" style="display:flex;flex-direction:column;gap:.5rem;" '
+      +   'ondragover="event.preventDefault()" ondrop="cxDrop(event,' + pi + ')">'
+      + buildDraggableNine(pi, 0, a.name, aPars, 'Front')
+      + buildDraggableNine(pi, 1, b.name, bPars, 'Back')
       + '</div>'
 
       + '</div>';
 
-    // Store pair indices for saveComplex
     labelsHtml += '<input type="hidden" id="cx-pair-' + pi + '" value="' + pair[0] + ',' + pair[1] + '">';
   });
-
   // Store pair count for saveComplex
   labelsHtml += '<input type="hidden" id="cx-pair-count" value="' + pairs.length + '">';
   labelsDiv.innerHTML = labelsHtml;
@@ -2333,14 +2342,18 @@ function saveComplex() {
   // Build a nine object for each selected course, named by the labels given
   // We need to reconcile: multiple pairs may label the same nine differently
   // Use first label encountered for each course index
+  // Read nines in their dragged DOM order to get correct front/back assignment
   const nineLabels = {};
   for (let pi=0; pi<pairCount; pi++) {
-    const pairVal = document.getElementById('cx-pair-' + pi)?.value || '';
-    const [ai, bi] = pairVal.split(',').map(Number);
-    const frontLabel = (document.getElementById('cx-front-label-' + pi)?.value || '').trim();
-    const backLabel  = (document.getElementById('cx-back-label-'  + pi)?.value || '').trim();
-    if (!nineLabels[ai]) nineLabels[ai] = frontLabel || ('Nine ' + (ai+1));
-    if (!nineLabels[bi]) nineLabels[bi] = backLabel  || ('Nine ' + (bi+1));
+    const list = document.getElementById('cx-pair-list-' + pi);
+    if (!list) continue;
+    const items = [...list.querySelectorAll('.cx-nine-drag')];
+    items.forEach(function(el, pos) {
+      const nineIdx = parseInt(el.dataset.nine);
+      const inp = document.getElementById('cx-nine-label-' + el.dataset.pair + '-' + el.dataset.nine);
+      const label = (inp ? inp.value.trim() : '') || ('Nine ' + (nineIdx+1));
+      if (!nineLabels[nineIdx]) nineLabels[nineIdx] = label;
+    });
   }
 
   _complexSelectedCourses.forEach(function(c, i) {
@@ -2651,6 +2664,103 @@ function getRoundsForCourse(courseId) {
   if (courseId.startsWith('combo__')) return getComboRounds(courseId);
   // Regular course or nine
   return state.rounds.filter(r => r.courseId === courseId);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// COMPLEX DRAG-TO-REORDER
+// ══════════════════════════════════════════════════════════════════════
+function buildDraggableNine(pairIdx, nineIdx, nineName, pars, defaultLabel) {
+  const id = 'cx-nine-' + pairIdx + '-' + nineIdx;
+  const total = pars.reduce(function(s,v){return s+v;},0);
+  const holesHtml = '<table style="width:100%;border-collapse:collapse;margin:.3rem 0;">'
+    + '<tr>'
+    + pars.map(function(p,i){return '<td style="text-align:center;font-size:.7rem;color:var(--text-muted);padding:.1rem .2rem;">'+(i+1)+'</td>';}).join('')
+    + '<td style="text-align:center;font-size:.7rem;color:var(--text-muted);padding:.1rem .3rem;font-weight:500;">Tot</td>'
+    + '</tr><tr>'
+    + pars.map(function(p){return '<td style="text-align:center;font-size:.75rem;color:var(--text-mid);padding:.1rem .2rem;">'+p+'</td>';}).join('')
+    + '<td style="text-align:center;font-size:.75rem;font-weight:600;color:var(--green-deep);padding:.1rem .3rem;">'+total+'</td>'
+    + '</tr></table>';
+
+  return '<div class="cx-nine-drag" id="' + id + '" '
+    + 'draggable="true" '
+    + 'data-pair="' + pairIdx + '" data-nine="' + nineIdx + '" '
+    + 'ondragstart="cxDragStart(event)" ondragend="cxDragEnd(event)">'
+    + '<div class="nine-drag-handle">'
+    + '☰ ' + nineName
+    + '<span id="cx-nine-label-badge-' + pairIdx + '-' + nineIdx + '">' + defaultLabel + '</span>'
+    + '</div>'
+    + holesHtml
+    + '<input type="text" id="cx-nine-label-' + pairIdx + '-' + nineIdx + '" '
+    + 'class="form-input" placeholder="Nine name (e.g. North)" value="' + nineName.replace(/Avalon Golf Links ?/i,'').trim() + '" '
+    + 'style="font-size:.82rem;margin-top:.3rem;" '
+    + 'onclick="event.stopPropagation()">'
+    + '</div>';
+}
+
+let _cxDragEl = null;
+let _cxDragOver = null;
+
+function cxDragStart(e) {
+  _cxDragEl = e.currentTarget;
+  _cxDragEl.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function cxDragEnd(e) {
+  if (_cxDragEl) _cxDragEl.classList.remove('dragging');
+  _cxDragEl = null;
+  _cxDragOver = null;
+}
+
+function cxDrop(e, pairIdx) {
+  e.preventDefault();
+  if (!_cxDragEl) return;
+  const list = document.getElementById('cx-pair-list-' + pairIdx);
+  if (!list) return;
+  const items = [...list.querySelectorAll('.cx-nine-drag')];
+  if (items.length < 2) return;
+  // Swap the two items
+  const dragged = _cxDragEl;
+  const other = items.find(function(el){return el !== dragged;});
+  if (!other) return;
+  // Swap DOM positions
+  const parent = dragged.parentNode;
+  const draggedNext = dragged.nextSibling;
+  parent.insertBefore(dragged, other);
+  if (draggedNext) parent.insertBefore(other, draggedNext);
+  else parent.appendChild(other);
+  // Update Front/Back badges
+  updateCxBadges(pairIdx);
+  // Update combo name input
+  updateCxComboName(pairIdx);
+}
+
+function updateCxBadges(pairIdx) {
+  const list = document.getElementById('cx-pair-list-' + pairIdx);
+  if (!list) return;
+  const items = [...list.querySelectorAll('.cx-nine-drag')];
+  const labels = ['Front','Back','Middle'];
+  items.forEach(function(el, i) {
+    const pair = el.dataset.pair;
+    const nine = el.dataset.nine;
+    const badge = document.getElementById('cx-nine-label-badge-' + pair + '-' + nine);
+    if (badge) badge.textContent = labels[i] || String(i+1);
+  });
+}
+
+function updateCxComboName(pairIdx) {
+  const list = document.getElementById('cx-pair-list-' + pairIdx);
+  if (!list) return;
+  const items = [...list.querySelectorAll('.cx-nine-drag')];
+  const nameInput = document.getElementById('cx-combo-name-' + pairIdx);
+  if (!nameInput) return;
+  const names = items.map(function(el) {
+    const pair = el.dataset.pair;
+    const nine = el.dataset.nine;
+    const inp = document.getElementById('cx-nine-label-' + pair + '-' + nine);
+    return inp ? inp.value.trim() : '';
+  }).filter(Boolean);
+  nameInput.value = names.join('/');
 }
 
 

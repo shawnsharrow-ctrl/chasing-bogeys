@@ -1775,9 +1775,17 @@ function saveCourse() {
   const location = document.getElementById('course-location').value.trim();
   if (!name) { alert('Please enter a course name.'); return; }
   const isComplex = document.getElementById('is-complex').checked;
+  // Use hole pars from API tee selection if available, otherwise default to par 4
+  let holePars;
+  if (_selectedTee && _selectedTee.holes && _selectedTee.holes.length === holes) {
+    holePars = _selectedTee.holes.map(h => h.par || 4);
+  } else {
+    holePars = Array(holes).fill(4);
+  }
+
   const course = {
     id: 'c'+Date.now(), name, location, rating:rating||72, slope:slope||113, par:par||72, holes,
-    holePars: Array(holes).fill(4),
+    holePars,
     isComplex, complexName: isComplex ? document.getElementById('complex-name').value||name : null,
     complexId: isComplex ? 'cx'+Date.now() : null,
     nines: isComplex ? [document.getElementById('nine-a').value||'Front', document.getElementById('nine-b').value||'Back'] : ['Front','Back']
@@ -2014,25 +2022,22 @@ async function selectApiCourse(id, name, location) {
   }
 }
 
+// Store the selected tee so saveCourse can use it
+let _selectedTee = null;
+
 function applySelectedTee() {
   const idx = document.getElementById('tee-picker-select').value;
   if (idx === '' || !_apiTees[idx]) return;
   const tee = _apiTees[idx];
+  _selectedTee = tee;
 
-  // Fill in rating, slope, par from API data
+  // Populate the manual form fields so user can review/edit
   if (tee.course_rating) document.getElementById('course-rating').value = tee.course_rating;
   if (tee.slope_rating)  document.getElementById('course-slope').value  = tee.slope_rating;
   if (tee.par_total)     document.getElementById('course-par').value    = tee.par_total;
+  if (tee.number_of_holes) document.getElementById('course-holes').value = tee.number_of_holes;
 
-  // Fill hole pars if available
-  if (tee.holes && tee.holes.length) {
-    tee.holes.forEach((h, i) => {
-      const inp = document.getElementById('hole-par-' + i);
-      if (inp && h.par) inp.value = h.par;
-    });
-  }
-
-  // Switch to manual tab to show the populated fields
+  // Switch to manual tab so user can see & confirm auto-filled fields
   switchModalTab('manual');
 }
 
@@ -2048,6 +2053,7 @@ document.addEventListener('click', e => {
 
 // Reset search UI when modal closes
 function resetCourseSearchUI() {
+  _selectedTee = null;
   const inp = document.getElementById('api-course-search');
   const results = document.getElementById('api-course-results');
   const teeWrap = document.getElementById('tee-picker-wrap');

@@ -1236,7 +1236,7 @@ function scoreClass(diff) {
 function calcHoleStats(courseId) {
   const course = state.courses.find(c=>c.id===courseId);
   if (!course) return [];
-  const rounds = state.rounds.filter(r=>r.courseId===courseId);
+  const rounds = getRoundsForCourse(courseId);
   return course.holePars.map((par,i) => {
     const scores = rounds.map(r=>r.scores[i]).filter(s=>s!=null&&s>0);
     if (!scores.length) return { hole:i+1, par, avg:null, common:null, commonDiff:null, blowup:null, trending:null, underPar:null, penalties:0 };
@@ -1257,13 +1257,14 @@ function renderStatsTable(courseId) {
   // No-op: kept for compatibility. Scorecard rendering handled by renderScorecardDisplay.
 }
 
-function renderScorecardDisplay(courseId) {
-  const course = state.courses.find(c=>c.id===courseId);
+function renderScorecardDisplay(courseOrId) {
+  const course = typeof courseOrId === 'object' ? courseOrId : state.courses.find(c=>c.id===courseOrId);
+  const courseId = course ? course.id : courseOrId;
   const container = document.getElementById('scorecard-display');
   if (!course || !container) return;
 
   const stats = calcHoleStats(courseId);
-  const rounds = state.rounds.filter(r=>r.courseId===courseId);
+  const rounds = getRoundsForCourse(courseId);
   const nineLabels = course.nines || ['Front', 'Back'];
   const total = course.holePars.length;
   const has18 = total >= 18;
@@ -1444,7 +1445,8 @@ function calcHandicap(courseId) {
   return { index: parseFloat((avg * 0.96).toFixed(1)), diffs, best };
 }
 
-function renderHandicap(courseId) {
+function renderHandicap(courseOrId) {
+  const courseId = typeof courseOrId === 'object' ? courseOrId.id : courseOrId;
   const hcp = calcHandicap(courseId);
   const numEl = document.getElementById('handicap-number');
   const subEl = document.getElementById('handicap-sub');
@@ -1549,7 +1551,7 @@ function calcUpDown(rounds, shotType) {
 }
 
 function renderShortGame(courseId) {
-  const rounds = state.rounds.filter(r=>r.courseId===courseId);
+  const rounds = getRoundsForCourse(courseId).filter(r=>r);
   const pitchYds = state.settings.pitchYds || 100;
   const chipYds  = state.settings.chipYds  || 25;
 

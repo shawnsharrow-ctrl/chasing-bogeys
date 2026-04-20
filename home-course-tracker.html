@@ -1797,12 +1797,7 @@ function searchGHIN() {
 function saveCourse() {
   const isManual = document.getElementById('modal-tab-manual').style.display !== 'none';
   if (!isManual) {
-    // If we have a selected tee from API, switch to manual and continue
-    if (_selectedTee || document.getElementById('course-name').value.trim()) {
-      switchModalTab('manual');
-    } else {
-      alert('Please select a course from the search results, then click Add Course again. Or use the Enter Manually tab.');
-    }
+    switchModalTab('manual');
     return;
   }
   const name = document.getElementById('course-name').value.trim();
@@ -1987,10 +1982,16 @@ let _apiTees = []; // tee data from API for selected course
 function debounceCourseSearch(val) {
   clearTimeout(_searchTimer);
   const results = document.getElementById('api-course-results');
-  if (val.length < 3) { results.style.display = 'none'; return; }
+  if (val.length < 2) { results.style.display = 'none'; return; }
   results.style.display = 'block';
   results.innerHTML = '<div class="course-search-status">Searching…</div>';
-  _searchTimer = setTimeout(() => runCourseSearch_withComplex(val), 400);
+  _searchTimer = setTimeout(() => {
+    const words = val.trim().split(/\s+/);
+    const query = words.length > 1 && words[words.length-1].length < 4
+      ? words.slice(0,-1).join(' ')
+      : val.trim();
+    runCourseSearch_withComplex(query);
+  }, 400);
 }
 
 
@@ -2132,7 +2133,21 @@ function clearComplexSelection() {
   updateComplexBar();
 }
 
-function showComplexModal() {
+async function showComplexModal() {
+  if (!_complexSelectedCourses.length) {
+    alert('Please check at least 2 courses first.');
+    return;
+  }
+  // Fetch full tee data for each selected course
+  for (let i = 0; i < _complexSelectedCourses.length; i++) {
+    if (!_complexSelectedCourses[i].apiData) {
+      try {
+        const res = await fetch(PROXY + '?action=course&id=' + _complexSelectedCourses[i].id);
+        const d = await res.json();
+        _complexSelectedCourses[i].apiData = d.course || d;
+      } catch(e) { console.warn('Could not fetch tee data for', _complexSelectedCourses[i].name); }
+    }
+  }
   const facilityInput = document.getElementById('cx-facility-name');
   if (facilityInput && _complexSelectedCourses.length) {
     facilityInput.value = _complexSelectedCourses[0].name.replace(/\s*(north|south|east|west|front|back|nine|\d+)/gi,'').trim();
@@ -2352,9 +2367,17 @@ function selectApiCourse_idx(idx) {
 
 
 function handleCxCheck(cb) {
-  const id = parseInt(cb.dataset.cid);
-  const name = cb.dataset.cname;
-  toggleComplexSelect(id, name, null);
+  const idx = parseInt(cb.dataset.idx);
+  const c = window._searchedCourses && window._searchedCourses[idx];
+  if (!c) return;
+  const isChecked = cb.checked;
+  const existing = _complexSelectedCourses.findIndex(function(s){return s.id===c.id;});
+  if (isChecked && existing === -1) {
+    _complexSelectedCourses.push({id: c.id, name: c.club_name, apiData: null});
+  } else if (!isChecked && existing !== -1) {
+    _complexSelectedCourses.splice(existing, 1);
+  }
+  updateComplexBar();
 }
 
 

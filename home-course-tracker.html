@@ -1235,7 +1235,17 @@ function scoreClass(diff) {
 }
 
 function calcHoleStats(courseId) {
-  const course = state.courses.find(c=>c.id===courseId);
+  // Resolve combo or real course
+  let course = state.courses.find(c=>c.id===courseId);
+  if (!course && courseId && courseId.startsWith('combo__')) {
+    const parts = courseId.split('__');
+    const n1 = state.courses.find(c=>c.id===parts[1]);
+    const n2 = state.courses.find(c=>c.id===parts[2]);
+    if (n1&&n2) course = {
+      holePars:[...(n1.holePars||Array(9).fill(4)),...(n2.holePars||Array(9).fill(4))],
+      holes:18
+    };
+  }
   if (!course) return [];
   const rounds = getRoundsForCourse(courseId);
   return course.holePars.map((par,i) => {
@@ -2016,13 +2026,20 @@ function renderAll() {
     const parts = courseId.split('__');
     const nine1 = state.courses.find(c=>c.id===parts[1]);
     const nine2 = state.courses.find(c=>c.id===parts[2]);
-    if (nine1&&nine2) displayCourse = {
+    if (nine1&&nine2) {
+    // Compute par from holePars to avoid bad stored values
+    const n1Par = (nine1.holePars||Array(9).fill(4)).reduce((s,v)=>s+v,0);
+    const n2Par = (nine2.holePars||Array(9).fill(4)).reduce((s,v)=>s+v,0);
+    displayCourse = {
       id:courseId, name:nine1.name+' / '+nine2.name,
       holes:18, holePars:[...(nine1.holePars||Array(9).fill(4)),...(nine2.holePars||Array(9).fill(4))],
-      rating:(nine1.rating||36)+(nine2.rating||36),
+      rating:Math.round((nine1.rating+nine2.rating)*10)/10,
       slope:Math.round(((nine1.slope||113)+(nine2.slope||113))/2),
-      par:(nine1.par||36)+(nine2.par||36), isCombo:true
+      par:n1Par+n2Par,
+      nines:[nine1.name, nine2.name],
+      isCombo:true
     };
+  }
   }
   if (!displayCourse) return;
   renderSummaryCards(displayCourse);
@@ -2043,6 +2060,7 @@ function renderAll() {
 async function initApp() {
   // Always load localStorage first as baseline
   loadState();
+  fixStoredPars();
 
   const { data: { session } } = await _supabase.auth.getSession();
 
@@ -2053,6 +2071,28 @@ async function initApp() {
     mergeLocalState();
   }
   renderAll();
+}
+
+function fixStoredPars() {
+  // One-time fix: correct nine par values that were stored as 72 instead of 36
+  try {
+    const ls = JSON.parse(localStorage.getItem('cb_hct_v1')||'{}');
+    let changed = false;
+    (ls.courses||[]).forEach(function(c) {
+      if (c.isComplex && c.holes===9 && c.holePars && c.holePars.length===9) {
+        const correctPar = c.holePars.reduce(function(s,v){return s+v;},0);
+        if (c.par !== correctPar) { c.par = correctPar; changed = true; }
+      }
+    });
+    if (changed) {
+      localStorage.setItem('cb_hct_v1', JSON.stringify(ls));
+      state.courses.forEach(function(c) {
+        if (c.isComplex && c.holes===9 && c.holePars) {
+          c.par = c.holePars.reduce(function(s,v){return s+v;},0);
+        }
+      });
+    }
+  } catch(e) {}
 }
 
 function mergeLocalState() {

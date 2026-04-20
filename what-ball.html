@@ -588,18 +588,24 @@ const TG = {
 
 // TG thresholds (computed from dataset thirds)
 const T_TG_ALL = {
-  carry:    {lo:268.5, hi:270.9},
-  height:   {lo:21.9,  hi:22.4},
-  ironSpin: {lo:4365,  hi:4653},
-  wedgeSpin:{lo:5592,  hi:5926},
-  comp:     {lo:87,    hi:104},
+  carry:     {lo:268.5, hi:270.9},  // fast — fallback
+  carryFast: {lo:268.5, hi:270.9},
+  carryMid:  {lo:206.9, hi:208.6},
+  carrySlow: {lo:160.2, hi:160.8},
+  height:    {lo:21.9,  hi:22.4},
+  ironSpin:  {lo:4365,  hi:4653},
+  wedgeSpin: {lo:5592,  hi:5926},
+  comp:      {lo:87,    hi:104},
 };
 const T_TG_U = {
-  carry:    {lo:269.3, hi:272.0},
-  height:   {lo:22.3,  hi:22.6},
-  ironSpin: {lo:4474,  hi:4733},
-  wedgeSpin:{lo:5692,  hi:5967},
-  comp:     {lo:99,    hi:112},
+  carry:     {lo:269.3, hi:272.0},
+  carryFast: {lo:269.3, hi:272.0},
+  carryMid:  {lo:208.0, hi:208.7},
+  carrySlow: {lo:160.5, hi:161.0},
+  height:    {lo:22.3,  hi:22.6},
+  ironSpin:  {lo:4474,  hi:4733},
+  wedgeSpin: {lo:5692,  hi:5967},
+  comp:      {lo:99,    hi:112},
 };
 
 // Real MyGolfSpy 2025 robot test data
@@ -647,10 +653,25 @@ const B = {
 // stat indices
 const CI=0,HI=1,DSI=2,ISI=3,WSI=4,CFI=5,CSI=6;
 // thresholds (dataset thirds)
-const T = {carry:{lo:258.5,hi:261.5},height:{lo:77.9,hi:79.2},ironSpin:{lo:6700,hi:6900},wedgeSpin:{lo:8900,hi:9300},comp:{lo:72,hi:88}};
+const T = {
+  carry:     {lo:258.5, hi:261.5},  // mid — fallback only
+  carryFast: {lo:283.0, hi:288.0},
+  carryMid:  {lo:258.5, hi:261.5},
+  carrySlow: {lo:229.5, hi:232.0},
+  height:    {lo:77.9,  hi:79.2},
+  ironSpin:  {lo:6700,  hi:6900},
+  wedgeSpin: {lo:8900,  hi:9300},
+  comp:      {lo:72,    hi:88},
+};
 
 
-function AT() { return activeThresholds(); }
+function AT() {
+  const t = activeThresholds();
+  // Override carry with speed-specific threshold
+  const spd = A.spd || 'mid';
+  const ck = spd==='fast' ? 'carryFast' : spd==='slow' ? 'carrySlow' : 'carryMid';
+  return Object.assign({}, t, {carry: t[ck] || t.carry});
+}
 
 function cat(v,lo,hi){return v<lo?'low':v>hi?'high':'mid';}
 function catLbl(c){return{low:'Low',mid:'Mid',high:'High'}[c];}

@@ -568,7 +568,7 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
       <div class="tab-nav">
         <button class="tab-btn active" onclick="switchTab('stats')">Hole Stats</button>
         <button class="tab-btn" onclick="switchTab('rounds')">Round History</button>
-        <button class="tab-btn" onclick="switchTab('handicap')">Course Handicap</button>
+        
         <button class="tab-btn" onclick="switchTab('penalties')">Penalties ★</button>
         <button class="tab-btn" onclick="switchTab('shortgame')">Short Game ★</button>
         <button class="tab-btn" onclick="switchTab('journal')">Round Journal</button>
@@ -591,7 +591,7 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
         <div class="rounds-list" id="rounds-list"></div>
       </div>
 
-      <!-- TAB: HANDICAP -->
+      <!-- TAB: HANDICAP (removed from nav, data still calculated) -->
       <div id="tab-handicap" style="display:none;">
         <div class="handicap-section">
           <div class="handicap-display">
@@ -892,8 +892,20 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
 
       <!-- Scorecard -->
       <div id="round-scorecard-wrap" style="display:none;">
-        <div class="form-section-title">Scorecard</div>
-        <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.75rem;">Enter score, putts, and any penalties for each hole. Chip/pitch counts are optional premium tracking.</p>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
+          <div class="form-section-title" style="margin-bottom:0;">Scorecard</div>
+          <div style="display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:var(--text-muted);">
+            <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;">
+              <input type="radio" name="score-mode" value="score-only" id="mode-score-only" onchange="setScorecardMode('score-only')" style="accent-color:var(--green-mid);">
+              Score only
+            </label>
+            <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;">
+              <input type="radio" name="score-mode" value="with-stats" id="mode-with-stats" onchange="setScorecardMode('with-stats')" checked style="accent-color:var(--green-mid);">
+              Score + Stats
+            </label>
+          </div>
+        </div>
+        <p style="font-size:.75rem;color:var(--text-muted);margin-bottom:.75rem;" id="scorecard-mode-hint">Enter score, putts, and any penalties for each hole.</p>
         <div style="overflow-x:auto;">
           <table class="scorecard-grid" id="round-scorecard">
             <thead>
@@ -1083,6 +1095,7 @@ function openModal(id) {
     if (!document.getElementById('edit-round-id')?.value) {
       document.getElementById('round-modal-title').textContent = 'Enter a Round';
       document.getElementById('delete-round-btn').style.display = 'none';
+      const mws = document.getElementById('mode-with-stats'); if(mws) { mws.checked=true; setScorecardMode('with-stats'); }
       populateRoundModal();
     }
   }
@@ -1205,6 +1218,13 @@ function renderSummaryCards(courseOrId) {
   const high       = Math.max(...allScores);
   const last5      = allScores.slice(-5);
   const last5avg   = last5.reduce((a,b)=>a+b,0) / last5.length;
+  // Course handicap index
+  const chi = calcHandicap(course);
+  const chiDisplay = chi !== null && chi !== undefined ? chi.toFixed(1) : '—';
+  // GHIN index from settings
+  const ghinIndex = state.settings?.ghinIndex || null;
+  const handicapDisplay = ghinIndex ? ghinIndex.toFixed(1) : chiDisplay;
+
   el.innerHTML = `
     <div class="summary-card highlight">
       <div class="summary-label">Rounds Played</div>
@@ -1212,24 +1232,19 @@ function renderSummaryCards(courseOrId) {
       <div class="summary-sub">${course.name}</div>
     </div>
     <div class="summary-card">
-      <div class="summary-label">Avg Score</div>
-      <div class="summary-val">${avg.toFixed(1)}</div>
-      <div class="summary-sub">+${(avg - course.par).toFixed(1)} to par</div>
+      <div class="summary-label">Scoring</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem .75rem;margin:.4rem 0;">
+        <div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">Avg</div><div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">${avg.toFixed(1)}</div></div>
+        <div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">Low</div><div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">${low}</div></div>
+        <div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">Trend</div><div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">${last5avg.toFixed(1)}</div></div>
+        <div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">High</div><div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">${high}</div></div>
+      </div>
+      <div class="summary-sub">par ${course.par}</div>
     </div>
     <div class="summary-card">
-      <div class="summary-label">Low Round</div>
-      <div class="summary-val">${low}</div>
-      <div class="summary-sub">+${low - course.par} to par</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">Trending</div>
-      <div class="summary-val">${last5avg.toFixed(1)}</div>
-      <div class="summary-sub">Avg last ${last5.length} rounds</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">High Round</div>
-      <div class="summary-val">${high}</div>
-      <div class="summary-sub">+${high - course.par} to par</div>
+      <div class="summary-label">Handicap Index</div>
+      <div class="summary-val">${handicapDisplay}</div>
+      <div class="summary-sub">${ghinIndex ? 'GHIN #'+state.settings.ghinNum : 'Course differential'}</div>
     </div>
   `;
 }
@@ -1269,6 +1284,7 @@ function calcHoleStats(courseId) {
   const rounds = getRoundsForCourse(courseId);
   return course.holePars.map((par,i) => {
     const scores = rounds.map(r=>r.scores[i]).filter(s=>s!=null&&s>0);
+    const statsRnds = rounds.filter(r=>!r.scoreOnly);
     if (!scores.length) return { hole:i+1, par, avg:null, common:null, commonDiff:null, blowup:null, trending:null, underPar:null, penalties:0 };
     const avg = scores.reduce((a,b)=>a+b,0)/scores.length;
     const freqMap = {};
@@ -1279,7 +1295,10 @@ function calcHoleStats(courseId) {
     const trending = last5.reduce((a,b)=>a+b,0)/last5.length;
     const underPar = scores.filter(s=>s<par).length/scores.length*100;
     const penalties = rounds.reduce((sum,r)=>sum+(r.penalties||[]).filter(p=>p.hole===i+1).length,0);
-    return { hole:i+1, par, avg, common, commonDiff:common-par, blowup, trending, underPar, penalties };
+    // GIR: only from rounds that have stats (not score-only)
+    const statsRounds = rounds.filter(r=>!r.scoreOnly && r.girs && r.girs.length > i);
+    const girPct = statsRounds.length ? statsRounds.filter(r=>r.girs[i]).length/statsRounds.length*100 : null;
+    return { hole:i+1, par, avg, common, commonDiff:common-par, blowup, trending, underPar, penalties, girPct };
   });
 }
 
@@ -1504,7 +1523,7 @@ function calcHandicap(courseId) {
 
 function renderHandicap(courseOrId) {
   const courseId = typeof courseOrId === 'object' ? courseOrId.id : courseOrId;
-  const hcp = calcHandicap(courseId);
+  const hcp = calcHandicap(courseOrId);
   const numEl = document.getElementById('handicap-number');
   const subEl = document.getElementById('handicap-sub');
   const diffList = document.getElementById('differential-list');
@@ -1807,6 +1826,7 @@ function buildScorecard(course) {
     </tr>`;
 
     let dataRows = rows.map((label, rowIdx) => {
+      const isStatsRow = rowIdx >= 1; // pitches, chips, putts, penalty, gir
       const field = fields[rowIdx];
       const cells = nineHoles.map((par, holeIdx) => {
         const absIdx = holeOffset + holeIdx;
@@ -1832,7 +1852,7 @@ function buildScorecard(course) {
       const outCell = field === 'penalty'
         ? `<td style="text-align:center;background:var(--cream);" id="${outId}">—</td>`
         : `<td style="text-align:center;font-weight:600;background:var(--cream);font-size:.88rem;" id="${outId}">—</td>`;
-      return `<tr>
+      return `<tr class="${isStatsRow?'sc-stats-row':''}">
         <td style="font-size:.72rem;font-weight:500;color:var(--text-muted);padding:.3rem .5rem;">${label}</td>
         ${cells.join('')}
         ${outCell}
@@ -1966,7 +1986,8 @@ function saveRound() {
     return cb ? cb.checked : false;
   });
   const tee = getSelectedTeeData();
-  const newRound = { id:'r'+Date.now(), courseId, date, scores, putts, chips, pitches, penalties, girs, journal, tee };
+  const scoreOnly = document.getElementById('mode-score-only')?.checked || false;
+  const newRound = { id:'r'+Date.now(), courseId, date, scores, putts, chips, pitches, penalties, girs, journal, tee, scoreOnly };
   const editId = document.getElementById('edit-round-id').value;
   if (editId) {
     // Edit mode — replace existing round
@@ -3074,6 +3095,25 @@ function deleteEditRound() {
   saveState();
   closeModal('enter-round-modal');
   renderAll();
+}
+
+function setScorecardMode(mode) {
+  const statsRows = document.querySelectorAll('.sc-stats-row');
+  const isScoreOnly = mode === 'score-only';
+  statsRows.forEach(function(row) {
+    row.style.opacity = isScoreOnly ? '0.35' : '1';
+    row.querySelectorAll('input,button').forEach(function(el) {
+      el.disabled = isScoreOnly;
+      if (isScoreOnly) el.tabIndex = -1;
+      else el.tabIndex = el.dataset.origTab || 0;
+    });
+  });
+  const hint = document.getElementById('scorecard-mode-hint');
+  if (hint) hint.textContent = isScoreOnly
+    ? 'Score only mode — stats fields are disabled for faster entry.'
+    : 'Enter score, putts, and any penalties for each hole.';
+  // Store mode on the round for stats filtering
+  document._scorecardMode = mode;
 }
 
 

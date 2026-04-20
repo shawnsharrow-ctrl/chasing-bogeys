@@ -2377,6 +2377,37 @@ function saveComplex() {
     saveCourseToSupabase(course);
   });
 
+  // Store named combos explicitly so dropdown uses them
+  // Each combo is defined by the pair order from the modal
+  const namedCombos = [];
+  for (let pi=0; pi<pairCount; pi++) {
+    const list = document.getElementById('cx-pair-list-' + pi);
+    if (!list) continue;
+    const items = [...list.querySelectorAll('.cx-nine-drag')];
+    if (items.length < 2) continue;
+    const comboNameEl = document.getElementById('cx-combo-name-' + pi);
+    const comboName = comboNameEl ? comboNameEl.value.trim() : '';
+    // Get the course IDs in front/back order from DOM
+    const frontIdx = parseInt(items[0].dataset.nine);
+    const backIdx  = parseInt(items[1].dataset.nine);
+    // Map original indices to the saved course IDs
+    // Courses are saved in _complexSelectedCourses order
+    const frontCourse = state.courses.filter(c=>c.complexId===complexId)[frontIdx];
+    const backCourse  = state.courses.filter(c=>c.complexId===complexId)[backIdx];
+    if (frontCourse && backCourse) {
+      namedCombos.push({
+        id: 'combo__' + frontCourse.id + '__' + backCourse.id,
+        name: comboName || (frontCourse.name + '/' + backCourse.name)
+      });
+    }
+  }
+  // Store combos on each nine for retrieval
+  if (namedCombos.length) {
+    state.courses.filter(c=>c.complexId===complexId).forEach(function(c){
+      c.namedCombos = namedCombos;
+    });
+  }
+
   if (!state.activeCourseId && state.courses.length) state.activeCourseId = complexId;
   saveState();
   _complexSelectedCourses = [];

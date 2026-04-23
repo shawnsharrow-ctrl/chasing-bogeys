@@ -32,14 +32,15 @@ exports.handler = async (event) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
-          user: { email_or_ghin: ghin_number, password, remember_me: true },
+          user: { email: ghin_number, password, remember_me: true },
           token: 'undefined',
         }),
       });
 
       const loginData = await loginRes.json();
 
-      if (!loginRes.ok || !loginData.golfer_user?.golfer_token) {
+      const golferToken = loginData.golfer_user?.golfer_token || loginData.token;
+      if (!loginRes.ok || !golferToken) {
         return {
           statusCode: 401,
           headers,
@@ -47,7 +48,8 @@ exports.handler = async (event) => {
         };
       }
 
-      const { golfer_token, golfer_user } = loginData;
+      const golfer_token = golferToken;
+      const golfer_user = loginData.golfer_user || {};
       const ghinNum = golfer_user?.ghin_number || ghin_number;
 
       // Fetch current handicap index with the new token

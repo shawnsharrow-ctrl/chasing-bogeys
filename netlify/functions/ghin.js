@@ -6,12 +6,11 @@ const headers = {
   'Content-Type': 'application/json',
 };
 
-// Generate a token similar to what GHIN's app uses
 function generateToken() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < 20; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
-  return result;
+  let t = '';
+  for (let i = 0; i < 20; i++) t += chars[Math.floor(Math.random() * chars.length)];
+  return t;
 }
 
 exports.handler = async (event) => {
@@ -31,67 +30,36 @@ exports.handler = async (event) => {
         return { statusCode: 400, headers, body: JSON.stringify({ error: 'Email and password required' }) };
       }
 
-      console.log('Attempting GHIN login for:', ghin_number);
-
-      // Use the correct endpoint and field names from GHIN's own app source
       const loginRes = await fetch('https://api2.ghin.com/api/v1/golfer_login.json', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
-          user: {
-            password: password,
-            email_or_ghin: ghin_number,
-            remember_me: true,
-          },
+          user: { password, email_or_ghin: ghin_number, remember_me: true },
           token: generateToken(),
         }),
       });
 
-      const loginData = await loginRes.json();
-      console.log('GHIN login status:', loginRes.status);
-      console.log('GHIN response keys:', Object.keys(loginData).join(', '));
+      const d = await loginRes.json();
 
-      // Extract token — check multiple possible locations
-      const golferToken = loginData.golfer_user?.golfer_token
-        || loginData.golfer_token
-        || loginData.token
-        || loginData.jwt;
-
-      if (!loginRes.ok || !golferToken) {
-        const ghinError = loginData.error
-          || (loginData.errors ? JSON.stringify(loginData.errors) : null)
-          || 'Login failed';
-        console.log('GHIN login failed:', ghinError, JSON.stringify(loginData));
-        return {
-          statusCode: 401,
-          headers,
-          body: JSON.stringify({ error: ghinError }),
-        };
+      // Token lives at golfer_user_token per GHIN's source
+      const token = d.golfer_user_token;
+      if (!loginRes.ok || !token) {
+        const msg = d.error
+          || d.errors?.digital_profile?.[0]?.top_line
+          || (d.errors ? JSON.stringify(d.errors) : 'Login failed');
+        return { statusCode: 401, headers, body: JSON.stringify({ error: msg }) };
       }
 
-      const golfer_user = loginData.golfer_user || {};
-      const ghinNum = golfer_user.ghin_number || ghin_number;
-
-      // Fetch current handicap index
-      const handicapRes = await fetch(
-        `https://api2.ghin.com/api/v1/golfers/search.json?golfer_id=${ghinNum}&per_page=1&page=1&source=GHINcom`,
-        { headers: { 'Authorization': `Bearer ${golferToken}` } }
-      );
-
-      const handicapData = await handicapRes.json();
-      const golfer = (handicapData.golfers && handicapData.golfers[0]) || {};
+      // Golfer data lives at golfers[0] per GHIN's source
+      const golfer = d.golfers?.[0] || {};
 
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
-          token: golferToken,
-          ghin_number: ghinNum,
-          first_name: golfer_user.first_name || golfer.first_name || '',
+          token,
+          ghin_number: golfer.ghin_number || ghin_number,
+          first_name: golfer.first_name || '',
           handicap_index: golfer.handicap_index || null,
           low_hi: golfer.low_hi || null,
           club_name: golfer.club_name || '',
@@ -119,7 +87,7 @@ exports.handler = async (event) => {
       }
 
       const data = await res.json();
-      const golfer = (data.golfers && data.golfers[0]) || {};
+      const golfer = data.golfers?.[0] || {};
 
       return {
         statusCode: 200,
@@ -135,7 +103,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Unknown action' }) };
 
   } catch (err) {
-    console.error('GHIN function error:', err);
+    console.error('GHIN error:', err);
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server error: ' + err.message }) };
   }
 };

@@ -3457,7 +3457,8 @@ async function refreshGHINIndex() {
     try {
       const password = await _ghinDecrypt(ghinNum, encPwd);
       if (!password) throw new Error('Decrypt failed');
-      const data = await _ghinAuthenticate(ghinNum, password);
+      const loginEmail = state.settings.ghinEmail || ghinNum;
+      const data = await _ghinAuthenticate(loginEmail, password);
       token = data.token;
       localStorage.setItem('ghin_token', token);
       // Update index from login response
@@ -3617,12 +3618,12 @@ function disconnectGHIN() {
     </div>
     <div class="modal-body">
       <p style="font-size:.82rem;color:var(--text-muted);line-height:1.6;margin-bottom:1.25rem;">
-        Enter your GHIN number and password to fetch your official Handicap Index.
+        Enter your GHIN.com login email and password to fetch your official Handicap Index.
         Your password is sent directly to GHIN's servers and is <strong>never stored</strong> by Chasing Bogeys.
       </p>
       <div class="form-group">
-        <label class="form-label">GHIN Number</label>
-        <input class="form-input" type="text" id="ghin-login-num" placeholder="e.g. 1234567" inputmode="numeric">
+        <label class="form-label">GHIN.com Email</label>
+        <input class="form-input" type="email" id="ghin-login-num" placeholder="email@example.com">
       </div>
       <div class="form-group">
         <label class="form-label">GHIN Password</label>

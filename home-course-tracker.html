@@ -2132,18 +2132,17 @@ function renderAll() {
   if (existingComplex) existingComplex.remove();
 
   if (isComplex) {
-    // Clear stale summary tiles
+    // Clear stale content
     const sc = document.getElementById('summary-cards');
-    if (sc) sc.innerHTML = '';
     const sd = document.getElementById('scorecard-display');
+    const existingComplex2 = statsArea && statsArea.querySelector('.complex-summary');
+    if (existingComplex2) existingComplex2.remove();
+    if (sc) sc.innerHTML = '';
     if (sd) sd.innerHTML = '';
-    // Show complex summary in stats tab
-    if (statsArea) {
-      const div = document.createElement('div');
-      div.className = 'complex-summary';
-      div.innerHTML = renderComplexView(courseId) || '';
-      statsArea.insertBefore(div, statsArea.firstChild);
-    }
+    // Render complex view — splits into summaryHTML and scorecardHTML
+    const complexResult = renderComplexView(courseId);
+    if (sc) sc.innerHTML = complexResult.summaryHTML || '';
+    if (sd) sd.innerHTML = complexResult.scorecardHTML || '';
     return;
   }
   // For combos or regular courses, resolve to a real course for display
@@ -2874,7 +2873,7 @@ function getComboRounds(comboId) {
 
 function renderComplexView(complexId) {
   const nines = getComplexNines(complexId);
-  if (!nines.length) return '';
+  if (!nines.length) return {summaryHTML:'', scorecardHTML:''};
   const facilityName = nines[0].complexName;
   const namedCombos = nines[0].namedCombos || getComplexCombos(complexId).map(c=>({id:c.id,name:c.label}));
 
@@ -2893,119 +2892,205 @@ function renderComplexView(complexId) {
   const totalRounds = allRoundIds.size;
 
   // ── Summary tiles ─────────────────────────────────────────────────
-  const complexAvg  = allScores.length ? (allScores.reduce(function(a,b){return a+b;},0)/allScores.length).toFixed(1) : '—';
-  const complexLow  = allScores.length ? Math.min(...allScores) : '—';
-  const complexHigh = allScores.length ? Math.max(...allScores) : '—';
-  const last5       = allScores.slice(-5);
+  const complexAvg   = allScores.length ? (allScores.reduce(function(a,b){return a+b;},0)/allScores.length).toFixed(1) : '—';
+  const complexLow   = allScores.length ? Math.min.apply(null,allScores) : '—';
+  const complexHigh  = allScores.length ? Math.max.apply(null,allScores) : '—';
+  const last5        = allScores.slice(-5);
   const complexTrend = last5.length ? (last5.reduce(function(a,b){return a+b;},0)/last5.length).toFixed(1) : '—';
 
-  // Compute par from most common combo (first named)
-  const firstComboId = namedCombos[0]?.id || '';
-  const p = firstComboId.split('__');
-  const fn1 = state.courses.find(function(c){return c.id===p[1];});
-  const fn2 = state.courses.find(function(c){return c.id===p[2];});
-  const comboParDisplay = fn1 && fn2
-    ? (fn1.holePars||Array(9).fill(4)).reduce(function(s,v){return s+v;},0)
-      + (fn2.holePars||Array(9).fill(4)).reduce(function(s,v){return s+v;},0)
-    : 72;
+  const firstComboId = namedCombos[0]?namedCombos[0].id:'';
+  const fp = firstComboId.split('__');
+  const fn1 = state.courses.find(function(c){return c.id===fp[1];});
+  const fn2 = state.courses.find(function(c){return c.id===fp[2];});
+  const comboParDisplay = (fn1?(fn1.holePars||[]).reduce(function(s,v){return s+v;},0):36)
+    + (fn2?(fn2.holePars||[]).reduce(function(s,v){return s+v;},0):36);
 
-  // GHIN / course handicap
-  const ghinIndex  = state.settings?.ghinConnected ? state.settings?.ghinIndex : null;
-  const hcpOverride = state.settings?.hcpOverride;
-  const handicapDisplay = ghinIndex != null
-    ? parseFloat(ghinIndex).toFixed(1)
+  const ghinIndex    = state.settings&&state.settings.ghinConnected ? state.settings.ghinIndex : null;
+  const hcpOverride  = state.settings&&state.settings.hcpOverride;
+  const handicapDisplay = ghinIndex!=null ? parseFloat(ghinIndex).toFixed(1)
     : (hcpOverride ? parseFloat(hcpOverride).toFixed(1) : '—');
-  const handicapSub = ghinIndex != null
-    ? 'GHIN #' + state.settings.ghinNum
+  const handicapSub = ghinIndex!=null ? 'GHIN #'+state.settings.ghinNum
     : (hcpOverride ? 'Manual override' : 'Connect GHIN or enter 3+ rounds');
 
   const summaryHTML =
-    '<div class="summary-cards" style="margin-bottom:1.5rem;">'
+    '<div class="summary-cards">'
     + '<div class="summary-card highlight">'
     +   '<div class="summary-label">Rounds Played</div>'
-    +   '<div class="summary-val">' + totalRounds + '</div>'
-    +   '<div class="summary-sub">' + facilityName + '</div>'
+    +   '<div class="summary-val">'+totalRounds+'</div>'
+    +   '<div class="summary-sub">'+facilityName+'</div>'
     + '</div>'
     + '<div class="summary-card">'
     +   '<div class="summary-label">Scoring</div>'
     +   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem .75rem;margin:.4rem 0;">'
-    +     '<div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">Avg</div>'
-    +       '<div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">' + complexAvg + '</div></div>'
-    +     '<div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">Low</div>'
-    +       '<div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">' + complexLow + '</div></div>'
-    +     '<div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">Trend</div>'
-    +       '<div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">' + complexTrend + '</div></div>'
-    +     '<div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">High</div>'
-    +       '<div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">' + complexHigh + '</div></div>'
+    +     '<div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">Avg</div><div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">'+complexAvg+'</div></div>'
+    +     '<div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">Low</div><div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">'+complexLow+'</div></div>'
+    +     '<div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">Trend</div><div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">'+complexTrend+'</div></div>'
+    +     '<div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">High</div><div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">'+complexHigh+'</div></div>'
     +   '</div>'
-    +   '<div class="summary-sub">par ' + comboParDisplay + '</div>'
+    +   '<div class="summary-sub">par '+comboParDisplay+'</div>'
     + '</div>'
     + '<div class="summary-card">'
     +   '<div class="summary-label">Handicap Index</div>'
-    +   '<div class="summary-val">' + handicapDisplay + '</div>'
-    +   '<div class="summary-sub">' + handicapSub + '</div>'
+    +   '<div class="summary-val">'+handicapDisplay+'</div>'
+    +   '<div class="summary-sub">'+handicapSub+'</div>'
     + '</div>'
     + '</div>';
 
+  // ── 18-hole combo stat cards ───────────────────────────────────────
   function statCard(label, avg, best, par, rounds, onclick) {
-    const click = onclick ? 'style="cursor:pointer;" onclick="' + onclick + '"' : '';
-    return '<div class="stat-card" ' + click + '>'
-      + '<div class="stat-label">' + label + '</div>'
-      + '<div class="stat-value">' + avg + '</div>'
-      + '<div style="font-size:.72rem;color:var(--text-muted);">avg · par ' + par + ' · ' + rounds + ' round' + (rounds!==1?'s':'') + ' · best ' + best + '</div>'
+    const click = onclick ? 'style="cursor:pointer;" onclick="'+onclick+'"' : '';
+    return '<div class="stat-card" '+click+'>'
+      + '<div class="stat-label">'+label+'</div>'
+      + '<div class="stat-value">'+avg+'</div>'
+      + '<div style="font-size:.72rem;color:var(--text-muted);">avg · par '+par+' · '+rounds+' round'+(rounds!==1?'s':'')+' · best '+best+'</div>'
       + '</div>';
   }
 
-  // ── Left column: 18-hole combo cards ──────────────────────────────
   let comboCards = '';
   namedCombos.forEach(function(combo) {
     const rounds = getComboRounds(combo.id);
     const scores = rounds.map(function(r){return r.scores.reduce(function(s,v){return s+(v||0);},0);}).filter(function(s){return s>0;});
     const avg  = scores.length ? (scores.reduce(function(a,b){return a+b;},0)/scores.length).toFixed(1) : '—';
-    const best = scores.length ? Math.min(...scores) : '—';
+    const best = scores.length ? Math.min.apply(null,scores) : '—';
     const parts = combo.id.split('__');
     const n1 = state.courses.find(function(c){return c.id===parts[1];});
     const n2 = state.courses.find(function(c){return c.id===parts[2];});
-    const n1Par = n1 ? (n1.holePars||Array(9).fill(4)).reduce(function(s,v){return s+v;},0) : 36;
-    const n2Par = n2 ? (n2.holePars||Array(9).fill(4)).reduce(function(s,v){return s+v;},0) : 36;
-    const clickFn = "state.activeCourseId='" + combo.id + "';saveState();renderAll();";
-    comboCards += statCard(combo.name, avg, best, n1Par+n2Par, rounds.length, clickFn);
+    const p1 = n1?(n1.holePars||[]).reduce(function(s,v){return s+v;},0):36;
+    const p2 = n2?(n2.holePars||[]).reduce(function(s,v){return s+v;},0):36;
+    const clickFn = "state.activeCourseId='"+combo.id+"';saveState();renderAll();";
+    comboCards += statCard(combo.name, avg, best, p1+p2, rounds.length, clickFn);
   });
 
-  // ── Right column: all three nines ─────────────────────────────────
   let nineCards = '';
   nines.forEach(function(nine) {
-    // Find ALL rounds that include this nine (it may appear as front OR back)
     const nineRounds = state.rounds.filter(function(r) {
       const parts = r.courseId.split('__');
-      return (parts[1]===nine.id || parts[2]===nine.id) && r.scores && r.scores.length >= 9;
+      return (parts[1]===nine.id||parts[2]===nine.id) && r.scores && r.scores.length>=9;
     });
     const nineScores = nineRounds.map(function(r) {
       const parts = r.courseId.split('__');
-      const isFirst = parts[1] === nine.id;
-      const slice = isFirst ? r.scores.slice(0,9) : r.scores.slice(9,18);
-      return slice.reduce(function(s,v){return s+(v||0);},0);
+      const isFirst = parts[1]===nine.id;
+      return (isFirst?r.scores.slice(0,9):r.scores.slice(9,18)).reduce(function(s,v){return s+(v||0);},0);
     }).filter(function(s){return s>0;});
     const avg  = nineScores.length ? (nineScores.reduce(function(a,b){return a+b;},0)/nineScores.length).toFixed(1) : '—';
-    const best = nineScores.length ? Math.min(...nineScores) : '—';
+    const best = nineScores.length ? Math.min.apply(null,nineScores) : '—';
     const ninePar = (nine.holePars||Array(9).fill(4)).reduce(function(s,v){return s+v;},0);
-    nineCards += statCard(nine.name + ' Nine', avg, best, ninePar, nineScores.length, null);
+    nineCards += statCard(nine.name+' Nine', avg, best, ninePar, nineScores.length, null);
   });
 
-  return '<div style="padding:.5rem 0;">'
-    + summaryHTML
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start;">'
-    +   '<div>'
-    +     '<h3 style="font-family:var(--serif);font-size:1rem;color:var(--green-deep);margin-bottom:.75rem;">18-Hole Courses</h3>'
-    +     '<div style="display:flex;flex-direction:column;gap:.75rem;">' + comboCards + '</div>'
-    +     '<p style="font-size:.72rem;color:var(--text-muted);margin-top:.5rem;">Click a course to view its stats.</p>'
-    +   '</div>'
-    +   '<div>'
-    +     '<h3 style="font-family:var(--serif);font-size:1rem;color:var(--green-deep);margin-bottom:.75rem;">Individual Nines</h3>'
-    +     '<div style="display:flex;flex-direction:column;gap:.75rem;">' + nineCards + '</div>'
-    +   '</div>'
+  const comboSection =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start;margin-bottom:2rem;">'
+    + '<div>'
+    +   '<h3 style="font-family:var(--serif);font-size:1rem;color:var(--green-deep);margin-bottom:.75rem;">18-Hole Courses</h3>'
+    +   '<div style="display:flex;flex-direction:column;gap:.75rem;">'+comboCards+'</div>'
+    +   '<p style="font-size:.72rem;color:var(--text-muted);margin-top:.5rem;">Click a course to view its stats.</p>'
+    + '</div>'
+    + '<div>'
+    +   '<h3 style="font-family:var(--serif);font-size:1rem;color:var(--green-deep);margin-bottom:.75rem;">Individual Nines</h3>'
+    +   '<div style="display:flex;flex-direction:column;gap:.75rem;">'+nineCards+'</div>'
     + '</div>'
     + '</div>';
+
+  // ── Per-nine scorecard tables ──────────────────────────────────────
+  let scorecardHTML = comboSection;
+  nines.forEach(function(nine) {
+    const nineRounds = state.rounds.filter(function(r) {
+      const parts = r.courseId.split('__');
+      return (parts[1]===nine.id||parts[2]===nine.id) && r.scores && r.scores.length>=9;
+    });
+    if (!nineRounds.length) return; // skip nines with no rounds
+
+    const pars   = nine.holePars || Array(9).fill(4);
+    const ninePar = pars.reduce(function(s,v){return s+v;},0);
+    const holeNums = pars.map(function(_,i){return i+1;});
+
+    // Per-hole stats
+    const holeStats = pars.map(function(par, i) {
+      const scores = nineRounds.map(function(r) {
+        const parts = r.courseId.split('__');
+        const isFirst = parts[1]===nine.id;
+        const offset = isFirst ? 0 : 9;
+        return r.scores[offset+i];
+      }).filter(function(s){return s>0;});
+      if (!scores.length) return {par:par, avg:null, common:null, blowup:null, underPar:null, girPct:null};
+      const avg = scores.reduce(function(a,b){return a+b;},0)/scores.length;
+      const freq = {};
+      scores.forEach(function(s){freq[s]=(freq[s]||0)+1;});
+      const common = parseInt(Object.entries(freq).sort(function(a,b){return b[1]-a[1];})[0][0]);
+      const blowup = scores.filter(function(s){return s-par>=3;}).length/scores.length*100;
+      const underPar = scores.filter(function(s){return s<par;}).length/scores.length*100;
+      // GIR from stats rounds
+      const statsRnds = nineRounds.filter(function(r){return !r.scoreOnly && r.girs && r.girs.length>=9;});
+      const girPct = statsRnds.length ? statsRnds.filter(function(r){
+        const parts = r.courseId.split('__');
+        const offset = parts[1]===nine.id ? 0 : 9;
+        return r.girs[offset+i];
+      }).length/statsRnds.length*100 : null;
+      return {par, avg, common, blowup, underPar, girPct};
+    });
+
+    function cell(v, fmt, cls) {
+      if (v===null||v===undefined) return '<td>—</td>';
+      const c = cls||'';
+      return '<td class="'+c+'">'+fmt(v)+'</td>';
+    }
+
+    const avgOut    = holeStats.every(function(h){return h.avg!==null;}) ? holeStats.reduce(function(s,h){return s+h.avg;},0).toFixed(1) : '—';
+    const blowupOut = holeStats.every(function(h){return h.blowup!==null;}) ? (holeStats.reduce(function(s,h){return s+h.blowup;},0)/holeStats.length).toFixed(0)+'%' : '—';
+    const underOut  = holeStats.every(function(h){return h.underPar!==null;}) ? (holeStats.reduce(function(s,h){return s+h.underPar;},0)/holeStats.length).toFixed(0)+'%' : '—';
+    const girHoles  = holeStats.filter(function(h){return h.girPct!==null;});
+    const girOut    = girHoles.length ? (girHoles.reduce(function(s,h){return s+h.girPct;},0)/girHoles.length).toFixed(0)+'%' : '—';
+
+    const thead = '<tr>'
+      + '<th style="text-align:left;background:var(--green-deep);color:var(--green-light);font-size:.7rem;letter-spacing:.08em;width:72px;">'+nine.name+'</th>'
+      + holeNums.map(function(n){return '<th>'+n+'</th>';}).join('')
+      + '<th style="background:var(--green-mid);">OUT</th>'
+      + '</tr>';
+
+    const parRow = '<tr style="background:var(--cream);">'
+      + '<td style="font-size:.72rem;color:var(--text-muted);font-weight:500;">Par</td>'
+      + pars.map(function(p){return '<td style="text-align:center;font-size:.82rem;color:var(--text-muted);">'+p+'</td>';}).join('')
+      + '<td style="text-align:center;font-weight:600;background:var(--cream);">'+ninePar+'</td>'
+      + '</tr>';
+
+    function statRow(label, fn, outVal) {
+      return '<tr>'
+        + '<td style="font-size:.72rem;font-weight:500;color:var(--text-muted);padding:.3rem .5rem;">'+label+'</td>'
+        + holeStats.map(function(h){
+            if (h.avg===null) return '<td>—</td>';
+            return '<td style="text-align:center;font-size:.82rem;">'+fn(h)+'</td>';
+          }).join('')
+        + '<td class="sc-out">'+outVal+'</td>'
+        + '</tr>';
+    }
+
+    const avgRow   = statRow('Avg Score',   function(h){return h.avg.toFixed(1);},  avgOut);
+    const blowRow  = statRow('Blow-Up %',   function(h){return h.blowup.toFixed(0)+'%';}, blowupOut);
+    const underRow = statRow('Under Par %', function(h){return h.underPar.toFixed(0)+'%';}, underOut);
+    const girRow   = '<tr>'
+      + '<td style="font-size:.72rem;font-weight:500;color:var(--text-muted);padding:.3rem .5rem;">GIR %</td>'
+      + holeStats.map(function(h){
+          if (h.girPct===null) return '<td>—</td>';
+          const cls = h.girPct>=50?'stat-under':h.girPct<=20?'stat-over':'';
+          return '<td class="'+cls+'" style="text-align:center;font-size:.82rem;">'+h.girPct.toFixed(0)+'%</td>';
+        }).join('')
+      + '<td class="sc-out">'+girOut+'</td>'
+      + '</tr>';
+
+    scorecardHTML +=
+      '<div class="scorecard-block">'
+      + '<div class="scorecard-block-header">'
+      +   '<span class="scorecard-nine-label">'+nine.name+' Nine</span>'
+      +   '<span class="scorecard-nine-out">'+nineRounds.length+' round'+(nineRounds.length!==1?'s':'')+' tracked</span>'
+      + '</div>'
+      + '<table class="sc-table">'
+      +   '<thead>'+thead+'</thead>'
+      +   '<tbody>'+parRow+avgRow+blowRow+underRow+girRow+'</tbody>'
+      + '</table>'
+      + '</div>';
+  });
+
+  return {summaryHTML: summaryHTML, scorecardHTML: scorecardHTML};
 }
 
 

@@ -6,6 +6,14 @@ const headers = {
   'Content-Type': 'application/json',
 };
 
+// Generate a token similar to what GHIN's app uses
+function generateToken() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 20; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+  return result;
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
@@ -25,43 +33,50 @@ exports.handler = async (event) => {
 
       console.log('Attempting GHIN login for:', ghin_number);
 
-      const loginRes = await fetch('https://api2.ghin.com/api/v1/users/login.json', {
+      // Use the correct endpoint and field names from GHIN's own app source
+      const loginRes = await fetch('https://api2.ghin.com/api/v1/golfer_login.json', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        },
         body: JSON.stringify({
-          user: { email: ghin_number, password: password, remember_me: true },
-          token: 'undefined',
+          user: {
+            password: password,
+            email_or_ghin: ghin_number,
+            remember_me: true,
+          },
+          token: generateToken(),
         }),
       });
 
       const loginData = await loginRes.json();
       console.log('GHIN login status:', loginRes.status);
-      console.log('GHIN login response keys:', Object.keys(loginData).join(', '));
+      console.log('GHIN response keys:', Object.keys(loginData).join(', '));
 
-      // Extract token — try multiple response shapes
+      // Extract token — check multiple possible locations
       const golferToken = loginData.golfer_user?.golfer_token
-        || loginData.token
         || loginData.golfer_token
+        || loginData.token
         || loginData.jwt;
 
       if (!loginRes.ok || !golferToken) {
-        // Pass through the actual GHIN error
         const ghinError = loginData.error
-          || (loginData.errors && JSON.stringify(loginData.errors))
+          || (loginData.errors ? JSON.stringify(loginData.errors) : null)
           || 'Login failed';
-        console.log('GHIN login failed:', ghinError);
-        console.log('Full GHIN response:', JSON.stringify(loginData));
+        console.log('GHIN login failed:', ghinError, JSON.stringify(loginData));
         return {
           statusCode: 401,
           headers,
-          body: JSON.stringify({ error: 'GHIN login failed: ' + ghinError, debug: loginData }),
+          body: JSON.stringify({ error: ghinError }),
         };
       }
 
       const golfer_user = loginData.golfer_user || {};
       const ghinNum = golfer_user.ghin_number || ghin_number;
 
-      // Fetch handicap index
+      // Fetch current handicap index
       const handicapRes = await fetch(
         `https://api2.ghin.com/api/v1/golfers/search.json?golfer_id=${ghinNum}&per_page=1&page=1&source=GHINcom`,
         { headers: { 'Authorization': `Bearer ${golferToken}` } }

@@ -2132,7 +2132,12 @@ function renderAll() {
   if (existingComplex) existingComplex.remove();
 
   if (isComplex) {
-    // Show complex summary in the stats tab area
+    // Clear stale summary tiles
+    const sc = document.getElementById('summary-cards');
+    if (sc) sc.innerHTML = '';
+    const sd = document.getElementById('scorecard-display');
+    if (sd) sd.innerHTML = '';
+    // Show complex summary in stats tab
     if (statsArea) {
       const div = document.createElement('div');
       div.className = 'complex-summary';
@@ -2871,8 +2876,76 @@ function renderComplexView(complexId) {
   const nines = getComplexNines(complexId);
   if (!nines.length) return '';
   const facilityName = nines[0].complexName;
-  // Use named combos if available, fall back to computed pairs
   const namedCombos = nines[0].namedCombos || getComplexCombos(complexId).map(c=>({id:c.id,name:c.label}));
+
+  // ── Aggregate all rounds across all combos ────────────────────────
+  const allRoundIds = new Set();
+  const allScores = [];
+  namedCombos.forEach(function(combo) {
+    getComboRounds(combo.id).forEach(function(r) {
+      if (!allRoundIds.has(r.id)) {
+        allRoundIds.add(r.id);
+        const total = r.scores.reduce(function(s,v){return s+(v||0);},0);
+        if (total > 0) allScores.push(total);
+      }
+    });
+  });
+  const totalRounds = allRoundIds.size;
+
+  // ── Summary tiles ─────────────────────────────────────────────────
+  const complexAvg  = allScores.length ? (allScores.reduce(function(a,b){return a+b;},0)/allScores.length).toFixed(1) : '—';
+  const complexLow  = allScores.length ? Math.min(...allScores) : '—';
+  const complexHigh = allScores.length ? Math.max(...allScores) : '—';
+  const last5       = allScores.slice(-5);
+  const complexTrend = last5.length ? (last5.reduce(function(a,b){return a+b;},0)/last5.length).toFixed(1) : '—';
+
+  // Compute par from most common combo (first named)
+  const firstComboId = namedCombos[0]?.id || '';
+  const p = firstComboId.split('__');
+  const fn1 = state.courses.find(function(c){return c.id===p[1];});
+  const fn2 = state.courses.find(function(c){return c.id===p[2];});
+  const comboParDisplay = fn1 && fn2
+    ? (fn1.holePars||Array(9).fill(4)).reduce(function(s,v){return s+v;},0)
+      + (fn2.holePars||Array(9).fill(4)).reduce(function(s,v){return s+v;},0)
+    : 72;
+
+  // GHIN / course handicap
+  const ghinIndex  = state.settings?.ghinConnected ? state.settings?.ghinIndex : null;
+  const hcpOverride = state.settings?.hcpOverride;
+  const handicapDisplay = ghinIndex != null
+    ? parseFloat(ghinIndex).toFixed(1)
+    : (hcpOverride ? parseFloat(hcpOverride).toFixed(1) : '—');
+  const handicapSub = ghinIndex != null
+    ? 'GHIN #' + state.settings.ghinNum
+    : (hcpOverride ? 'Manual override' : 'Connect GHIN or enter 3+ rounds');
+
+  const summaryHTML =
+    '<div class="summary-cards" style="margin-bottom:1.5rem;">'
+    + '<div class="summary-card highlight">'
+    +   '<div class="summary-label">Rounds Played</div>'
+    +   '<div class="summary-val">' + totalRounds + '</div>'
+    +   '<div class="summary-sub">' + facilityName + '</div>'
+    + '</div>'
+    + '<div class="summary-card">'
+    +   '<div class="summary-label">Scoring</div>'
+    +   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem .75rem;margin:.4rem 0;">'
+    +     '<div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">Avg</div>'
+    +       '<div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">' + complexAvg + '</div></div>'
+    +     '<div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">Low</div>'
+    +       '<div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">' + complexLow + '</div></div>'
+    +     '<div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">Trend</div>'
+    +       '<div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">' + complexTrend + '</div></div>'
+    +     '<div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">High</div>'
+    +       '<div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">' + complexHigh + '</div></div>'
+    +   '</div>'
+    +   '<div class="summary-sub">par ' + comboParDisplay + '</div>'
+    + '</div>'
+    + '<div class="summary-card">'
+    +   '<div class="summary-label">Handicap Index</div>'
+    +   '<div class="summary-val">' + handicapDisplay + '</div>'
+    +   '<div class="summary-sub">' + handicapSub + '</div>'
+    + '</div>'
+    + '</div>';
 
   function statCard(label, avg, best, par, rounds, onclick) {
     const click = onclick ? 'style="cursor:pointer;" onclick="' + onclick + '"' : '';
@@ -2883,37 +2956,44 @@ function renderComplexView(complexId) {
       + '</div>';
   }
 
-  // Left column: 18-hole combos
+  // ── Left column: 18-hole combo cards ──────────────────────────────
   let comboCards = '';
   namedCombos.forEach(function(combo) {
     const rounds = getComboRounds(combo.id);
-    const scores = rounds.map(r=>r.scores.reduce((s,v)=>s+(v||0),0)).filter(s=>s>0);
-    const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : '—';
+    const scores = rounds.map(function(r){return r.scores.reduce(function(s,v){return s+(v||0);},0);}).filter(function(s){return s>0;});
+    const avg  = scores.length ? (scores.reduce(function(a,b){return a+b;},0)/scores.length).toFixed(1) : '—';
     const best = scores.length ? Math.min(...scores) : '—';
-    // Get par from the two nines
     const parts = combo.id.split('__');
-    const n1 = state.courses.find(c=>c.id===parts[1]);
-    const n2 = state.courses.find(c=>c.id===parts[2]);
-    const par = (n1?n1.par||36:36) + (n2?n2.par||36:36);
+    const n1 = state.courses.find(function(c){return c.id===parts[1];});
+    const n2 = state.courses.find(function(c){return c.id===parts[2];});
+    const n1Par = n1 ? (n1.holePars||Array(9).fill(4)).reduce(function(s,v){return s+v;},0) : 36;
+    const n2Par = n2 ? (n2.holePars||Array(9).fill(4)).reduce(function(s,v){return s+v;},0) : 36;
     const clickFn = "state.activeCourseId='" + combo.id + "';saveState();renderAll();";
-    comboCards += statCard(combo.name, avg, best, par, rounds.length, clickFn);
+    comboCards += statCard(combo.name, avg, best, n1Par+n2Par, rounds.length, clickFn);
   });
 
-  // Right column: individual nines
+  // ── Right column: all three nines ─────────────────────────────────
   let nineCards = '';
   nines.forEach(function(nine) {
-    const nineRounds = state.rounds.filter(r=>r.courseId.includes(nine.id) && r.scores && r.scores.length>=9);
+    // Find ALL rounds that include this nine (it may appear as front OR back)
+    const nineRounds = state.rounds.filter(function(r) {
+      const parts = r.courseId.split('__');
+      return (parts[1]===nine.id || parts[2]===nine.id) && r.scores && r.scores.length >= 9;
+    });
     const nineScores = nineRounds.map(function(r) {
       const parts = r.courseId.split('__');
-      const isFirst = parts[1]===nine.id;
-      return (isFirst?r.scores.slice(0,9):r.scores.slice(9,18)).reduce((s,v)=>s+(v||0),0);
-    }).filter(s=>s>0);
-    const avg = nineScores.length ? (nineScores.reduce((a,b)=>a+b,0)/nineScores.length).toFixed(1) : '—';
+      const isFirst = parts[1] === nine.id;
+      const slice = isFirst ? r.scores.slice(0,9) : r.scores.slice(9,18);
+      return slice.reduce(function(s,v){return s+(v||0);},0);
+    }).filter(function(s){return s>0;});
+    const avg  = nineScores.length ? (nineScores.reduce(function(a,b){return a+b;},0)/nineScores.length).toFixed(1) : '—';
     const best = nineScores.length ? Math.min(...nineScores) : '—';
-    nineCards += statCard(nine.name + ' Nine', avg, best, nine.par||36, nineScores.length, null);
+    const ninePar = (nine.holePars||Array(9).fill(4)).reduce(function(s,v){return s+v;},0);
+    nineCards += statCard(nine.name + ' Nine', avg, best, ninePar, nineScores.length, null);
   });
 
   return '<div style="padding:.5rem 0;">'
+    + summaryHTML
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start;">'
     +   '<div>'
     +     '<h3 style="font-family:var(--serif);font-size:1rem;color:var(--green-deep);margin-bottom:.75rem;">18-Hole Courses</h3>'
@@ -2927,6 +3007,7 @@ function renderComplexView(complexId) {
     + '</div>'
     + '</div>';
 }
+
 
 function setActiveCombo(comboId) {
   // Show round history for this specific combo

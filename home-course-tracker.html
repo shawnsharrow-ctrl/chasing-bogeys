@@ -2257,68 +2257,78 @@ function mergeLocalState() {
 }
 
 async function loadFromSupabase() {
+  const { data: { session } } = await _supabase.auth.getSession();
+  if (!session) return;
+
   // Load courses
   const { data: courses } = await _supabase
     .from('courses')
-    .select('*')
-    .order('created_at');
+    .select('local_id, data')
+    .eq('user_id', session.user.id);
   if (courses && courses.length) {
-    state.courses = courses.map(c => ({
-      id: c.id, name: c.name, location: c.location,
-      rating: c.rating, slope: c.slope, par: c.par, holes: c.holes,
-      holePars: c.hole_pars, isComplex: c.is_complex,
-      complexName: c.complex_name, complexId: c.complex_id,
-      nines: c.nine_labels || ['Front','Back']
-    }));
-    if (state.courses.length) state.activeCourseId = state.courses[0].id;
+    state.courses = courses.map(c => c.data);
   }
 
   // Load rounds
   const { data: rounds } = await _supabase
     .from('rounds')
-    .select('*')
-    .order('played_at');
+    .select('local_id, data')
+    .eq('user_id', session.user.id);
   if (rounds && rounds.length) {
-    state.rounds = rounds.map(r => ({
-      id: r.id, courseId: r.course_id, date: r.played_at,
-      scores: r.scores, putts: r.putts || [], chips: r.chips || [],
-      pitches: r.pitches || [], penalties: r.penalties || [],
-      journal: { tee: r.journal_tee, approach: r.journal_approach,
-                 short: r.journal_short, notes: r.journal_notes, share: r.journal_share }
-    }));
+    state.rounds = rounds.map(r => r.data);
+  }
+
+  // Load settings
+  const { data: settingsRow } = await _supabase
+    .from('user_settings')
+    .select('data')
+    .eq('user_id', session.user.id)
+    .single();
+  if (settingsRow && settingsRow.data) {
+    state.settings = Object.assign({}, state.settings, settingsRow.data);
+  }
+
+  // Use active course from Supabase settings if available
+  if (settingsRow && settingsRow.data && settingsRow.data.activeCourseId) {
+    state.activeCourseId = settingsRow.data.activeCourseId;
   }
 }
 
-// Override saveState to sync with Supabase when logged in
-const _origSaveState = saveState;
 
 async function saveRoundToSupabase(round) {
   const { data: { session } } = await _supabase.auth.getSession();
   if (!session) return;
-  const course = state.courses.find(c => c.id === round.courseId);
-  await _supabase.from('rounds').upsert({
-    id: round.id, user_id: session.user.id,
-    course_id: round.courseId, played_at: round.date,
-    scores: round.scores, putts: round.putts, chips: round.chips,
-    pitches: round.pitches, penalties: round.penalties,
-    journal_tee: round.journal?.tee, journal_approach: round.journal?.approach,
-    journal_short: round.journal?.short, journal_notes: round.journal?.notes,
-    journal_share: round.journal?.share || false,
-  });
+  const { error } = await _supabase.from('rounds').upsert({
+    local_id: round.id,
+    user_id: session.user.id,
+    course_local_id: round.courseId,
+    played_at: round.date,
+    data: round,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'local_id,user_id' });
+  if (error) console.warn('saveRoundToSupabase error:', error.message);
 }
 
 async function saveCourseToSupabase(course) {
   const { data: { session } } = await _supabase.auth.getSession();
   if (!session) return;
-  await _supabase.from('courses').upsert({
-    id: course.id, user_id: session.user.id,
-    name: course.name, location: course.location,
-    rating: course.rating, slope: course.slope,
-    par: course.par, holes: course.holes,
-    hole_pars: course.holePars, is_complex: course.isComplex,
-    complex_name: course.complexName, complex_id: course.complexId,
-    nine_labels: course.nines,
-  });
+  const { error } = await _supabase.from('courses').upsert({
+    local_id: course.id,
+    user_id: session.user.id,
+    data: course,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'local_id,user_id' });
+  if (error) console.warn('saveCourseToSupabase error:', error.message);
+}
+
+async function saveSettingsToSupabase(settings) {
+  const { data: { session } } = await _supabase.auth.getSession();
+  if (!session) return;
+  await _supabase.from('user_settings').upsert({
+    user_id: session.user.id,
+    data: settings,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id' });
 }
 
 loadState();

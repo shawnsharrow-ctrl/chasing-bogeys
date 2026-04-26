@@ -807,7 +807,7 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
           </div>
           <div class="form-group">
             <label class="form-label">Holes</label>
-            <select class="form-input" id="course-holes">
+            <select class="form-input" id="course-holes" onchange="updateHoleParGrid(parseInt(this.value))">
               <option value="18">18 holes</option>
               <option value="9">9 holes</option>
             </select>
@@ -1097,6 +1097,16 @@ function clearLocalData() {
 // ════════════════════════════════════════
 function openModal(id) {
   document.getElementById(id).classList.add('open');
+  if (id === 'add-course-modal') {
+    // Initialize hole par grid with defaults
+    updateHoleParGrid(18, null);
+    // Clear tee note
+    const tn = document.getElementById('api-tee-note');
+    if (tn) { tn.style.display='none'; tn.textContent=''; }
+    // Clear hidden rating/slope
+    const r = document.getElementById('course-rating'); if(r) r.value='';
+    const s = document.getElementById('course-slope');  if(s) s.value='';
+  }
   if (id === 'enter-round-modal') {
     // Only call populateRoundModal for fresh rounds (not edits)
     if (!document.getElementById('edit-round-id')?.value) {
@@ -2066,13 +2076,13 @@ function saveCourse() {
   const location = document.getElementById('course-location').value.trim();
   if (!name) { alert('Please enter a course name.'); return; }
   const isComplex = document.getElementById('is-complex').checked;
-  // Use hole pars from API tee selection if available, otherwise default to par 4
-  let holePars;
-  if (_selectedTee && _selectedTee.holes && _selectedTee.holes.length === holes) {
-    holePars = _selectedTee.holes.map(h => h.par || 4);
-  } else {
-    holePars = Array(holes).fill(4);
+  // Read hole pars from the grid inputs
+  let holePars = [];
+  for (let i=0; i<holes; i++) {
+    const inp = document.getElementById('hp-' + i);
+    holePars.push(inp ? (parseInt(inp.value) || 4) : 4);
   }
+  if (!holePars.length) holePars = Array(holes).fill(4);
 
   const course = {
     id: 'c'+Date.now(), name, location, rating:rating||72, slope:slope||113, par:par||72, holes,
@@ -3560,6 +3570,55 @@ function disconnectGHIN() {
   saveState();
   updateGHINConnectionStatus();
   renderAll();
+}
+
+function updateHoleParGrid(holes, apiHoles) {
+  const grid = document.getElementById('hole-par-grid');
+  if (!grid) return;
+  const count = parseInt(holes) || 18;
+  // If API hole data provided, use those pars; otherwise use par 4 defaults
+  const defaultPars = apiHoles && apiHoles.length
+    ? apiHoles.slice(0, count).map(function(h){ return h.par || 4; })
+    : Array(count).fill(4);
+  grid.style.gridTemplateColumns = count === 9
+    ? 'repeat(9, 1fr)'
+    : 'repeat(9, 1fr)';
+  grid.innerHTML = defaultPars.map(function(par, i) {
+    return '<div style="text-align:center;">'
+      + '<div style="font-size:.65rem;color:var(--text-muted);margin-bottom:.2rem;">H' + (i+1) + '</div>'
+      + '<input type="number" class="form-input" id="hp-' + i + '" value="' + par + '" min="3" max="6" '
+      + 'style="padding:.3rem;text-align:center;font-size:.82rem;">'
+      + '</div>';
+  }).join('');
+  // If 18 holes, split into two rows of 9
+  if (count === 18) {
+    grid.style.gridTemplateColumns = 'repeat(9, 1fr)';
+    // Add OUT/IN labels between rows
+    const items = [...grid.children];
+    const row1 = items.slice(0,9);
+    const row2 = items.slice(9,18);
+    grid.innerHTML = '';
+    row1.forEach(function(el){ grid.appendChild(el); });
+    const outLabel = document.createElement('div');
+    outLabel.style.cssText = 'grid-column:1/-1;font-size:.7rem;color:var(--text-muted);font-weight:500;margin:.25rem 0 .1rem;';
+    outLabel.textContent = 'BACK NINE';
+    grid.appendChild(outLabel);
+    row2.forEach(function(el){ grid.appendChild(el); });
+  }
+}
+
+function showComplexHelp() {
+  alert(
+    'How to add a 27-hole complex:\n\n' +
+    '1. Search for your course in the Search tab.\n' +
+    '2. The search will return 3 separate results (one per nine).\n' +
+    '3. Check the checkbox next to each of the 3 results.\n' +
+    '4. A "Link as 27-Hole Complex" button will appear — click it.\n' +
+    '5. Name the facility and label each nine (e.g. North, West, South).\n' +
+    '6. Drag the nines into the correct front/back order for each 18-hole combination.\n' +
+    '7. Click Save Complex.\n\n' +
+    'You can then enter rounds for any combination of two nines (e.g. North/West).'
+  );
 }
 
 

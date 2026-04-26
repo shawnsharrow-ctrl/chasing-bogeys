@@ -267,9 +267,14 @@ table.stats-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; 
 .modal-overlay.open { display: flex; }
 .modal {
   background: var(--white); border-radius: 12px; width: 100%; max-width: 680px;
-  max-height: calc(100vh - 4rem); overflow-y: auto;
-  animation: modalIn 0.25s ease;
+  max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
 }
+#add-course-modal .modal {
+  max-width: 780px; max-height: 92vh; overflow-y: hidden;
+  display: flex; flex-direction: column;
+}
+#add-course-modal .modal-body { overflow-y: auto; flex: 1; min-height: 0; }
+#add-course-modal #api-course-results { max-height: min(200px,35vh); overflow-y: auto; }
 @keyframes modalIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 .modal-header {
   padding: 1.5rem 1.75rem 1rem; border-bottom: 1px solid var(--cream-dark);

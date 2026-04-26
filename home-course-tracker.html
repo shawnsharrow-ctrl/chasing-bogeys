@@ -795,16 +795,7 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
             <input class="form-input" type="text" id="course-location" placeholder="City, State">
           </div>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Course Rating</label>
-            <input class="form-input" type="number" id="course-rating" placeholder="e.g. 71.4" step="0.1">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Slope Rating</label>
-            <input class="form-input" type="number" id="course-slope" placeholder="e.g. 128">
-          </div>
-        </div>
+        <input type="hidden" id="course-rating" value=""><input type="hidden" id="course-slope" value="">
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Par</label>
@@ -825,7 +816,7 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
             <span class="toggle-slider"></span>
           </label>
           <div>
-            <div style="font-weight:500;font-size:0.85rem;color:var(--text-dark);">27-hole complex</div>
+            <div style="font-weight:500;font-size:0.85rem;color:var(--text-dark);">27-hole complex &nbsp;<a onclick="showComplexHelp()" style="font-size:.72rem;font-weight:400;color:var(--green-mid);cursor:pointer;text-decoration:underline;">How to add?</a></div>
             <div style="font-size:0.75rem;color:var(--text-muted);">Links this course to its sister nines (e.g. Avalon Golf Links)</div>
           </div>
         </div>

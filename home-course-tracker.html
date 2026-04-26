@@ -2275,9 +2275,10 @@ function mergeLocalState() {
     ls.courses = dedupedCourses;
     localStorage.setItem('cb_hct_v1', JSON.stringify(ls));
 
-    // Merge courses not already in state
+    // Merge courses not already in state, skipping deleted ones
+    var deleted = JSON.parse(localStorage.getItem('cb_deleted_ids')||'[]');
     (ls.courses || []).forEach(function(lc) {
-      if (!state.courses.find(function(c){return c.id===lc.id;})) {
+      if (!deleted.includes(lc.id) && !state.courses.find(function(c){return c.id===lc.id;})) {
         state.courses.push(lc);
         saveCourseToSupabase(lc);
       }
@@ -2797,6 +2798,12 @@ function deleteCourse() {
   state.rounds  = state.rounds.filter(function(r){return r.courseId!==id;});
   state.courses = state.courses.filter(function(c){return c.id!==id;});
   if (state.activeCourseId === id) state.activeCourseId = state.courses.length ? state.courses[0].id : null;
+  // Track deleted IDs so mergeLocalState won't re-add them
+  var deleted = JSON.parse(localStorage.getItem('cb_deleted_ids')||'[]');
+  if (!deleted.includes(id)) deleted.push(id);
+  localStorage.setItem('cb_deleted_ids', JSON.stringify(deleted));
+  // Also delete from Supabase
+  _supabase.auth.getSession().then(function(s){ if(s.data.session) _supabase.from('courses').delete().eq('local_id',id).eq('user_id',s.data.session.user.id); });
   saveState();
   closeModal('edit-course-modal');
   renderAll();
@@ -3021,6 +3028,24 @@ function renderComplexView(complexId) {
     +     '<div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">Trend</div><div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">'+complexTrend+'</div></div>'
     +     '<div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">High</div><div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">'+complexHigh+'</div></div>'
     +   '</div>'
+    +   (function(){
+          // GIR and U&D across all complex rounds
+          var allRndsList = [];
+          allRoundIds.forEach(function(id){ var r=state.rounds.find(function(x){return x.id===id;}); if(r) allRndsList.push(r); });
+          var statsRnds = allRndsList.filter(function(r){return !r.scoreOnly && r.girs;});
+          var totHoles = statsRnds.reduce(function(s,r){return s+(r.girs||[]).length;},0);
+          var girCt = statsRnds.reduce(function(s,r){return s+(r.girs||[]).filter(Boolean).length;},0);
+          var girPct = totHoles ? Math.round(girCt/totHoles*100) : null;
+          var chipUD = calcUpDown(statsRnds,'chip');
+          var pitchUD = calcUpDown(statsRnds,'pitch');
+          var udAtt = chipUD.attempts+pitchUD.attempts;
+          var udSuc = chipUD.successes+pitchUD.successes;
+          var udPct = udAtt ? Math.round(udSuc/udAtt*100) : null;
+          return '<div style="border-top:1px solid var(--cream-dark);margin:.4rem 0 .3rem;padding-top:.4rem;display:grid;grid-template-columns:1fr 1fr;gap:.25rem .75rem;">'
+            + '<div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">GIR %</div><div style="font-size:1.1rem;font-weight:600;color:var(--text-dark);">'+(girPct!==null?girPct+'%':'—')+'</div></div>'
+            + '<div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">Up & Down %</div><div style="font-size:1.1rem;font-weight:600;color:var(--text-dark);">'+(udPct!==null?udPct+'%':'—')+'</div></div>'
+            + '</div>';
+        })()
     +   '<div class="summary-sub">par '+comboParDisplay+'</div>'
     + '</div>'
     + '<div class="summary-card">'

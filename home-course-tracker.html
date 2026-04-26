@@ -2262,24 +2262,35 @@ function fixStoredPars() {
 }
 
 function mergeLocalState() {
-  // Load localStorage and merge anything not already in state
   try {
     const ls = JSON.parse(localStorage.getItem('cb_hct_v1') || '{}');
-    // Merge courses
+
+    // Deduplicate localStorage courses by name — keep most recent
+    const seen = {};
+    const dedupedCourses = [];
+    (ls.courses || []).slice().reverse().forEach(function(c) {
+      const key = c.isComplex ? (c.complexId + '_' + c.name) : c.name;
+      if (!seen[key]) { seen[key] = true; dedupedCourses.push(c); }
+    });
+    ls.courses = dedupedCourses;
+    localStorage.setItem('cb_hct_v1', JSON.stringify(ls));
+
+    // Merge courses not already in state
     (ls.courses || []).forEach(function(lc) {
       if (!state.courses.find(function(c){return c.id===lc.id;})) {
         state.courses.push(lc);
+        saveCourseToSupabase(lc);
       }
     });
-    // Merge rounds
+
+    // Merge rounds not already in state
     (ls.rounds || []).forEach(function(lr) {
       if (!state.rounds.find(function(r){return r.id===lr.id;})) {
         state.rounds.push(lr);
-        // Try to sync to Supabase
         saveRoundToSupabase(lr);
       }
     });
-    // Use localStorage activeCourseId if state doesn't have one
+
     if (!state.activeCourseId && ls.activeCourseId) {
       state.activeCourseId = ls.activeCourseId;
     }
@@ -2342,13 +2353,32 @@ async function saveRoundToSupabase(round) {
 async function saveCourseToSupabase(course) {
   const { data: { session } } = await _supabase.auth.getSession();
   if (!session) return;
-  const { error } = await _supabase.from('courses').upsert({
+  // Try v2 schema first (jsonb), fall back to v1 if not yet migrated
+  let result = await _supabase.from('courses').upsert({
     local_id: course.id,
     user_id: session.user.id,
     data: course,
     updated_at: new Date().toISOString()
   }, { onConflict: 'local_id,user_id' });
-  if (error) console.warn('saveCourseToSupabase error:', error.message);
+  if (result.error && result.error.code === 'PGRST204') {
+    // v2 schema not yet deployed — try v1 schema columns
+    result = await _supabase.from('courses').upsert({
+      id: course.id,
+      user_id: session.user.id,
+      name: course.name,
+      location: course.location || '',
+      rating: course.rating || 72,
+      slope: course.slope || 113,
+      par: course.par || 72,
+      holes: course.holes || 18,
+      hole_pars: course.holePars || [],
+      is_complex: course.isComplex || false,
+      complex_name: course.complexName || null,
+      complex_id: course.complexId || null,
+      nine_labels: course.nines || []
+    });
+  }
+  if (result.error) console.warn('saveCourseToSupabase error:', result.error.message);
 }
 
 async function saveSettingsToSupabase(settings) {

@@ -2077,10 +2077,13 @@ function saveCourse() {
   const course = {
     id: 'c'+Date.now(), name, location, rating:rating||72, slope:slope||113, par:par||72, holes,
     holePars,
+    apiTees: window._apiCourseData ? window._apiCourseData.tees : {},
+    apiId: window._apiCourseData ? window._apiCourseData.id : null,
     isComplex, complexName: isComplex ? document.getElementById('complex-name').value||name : null,
     complexId: isComplex ? 'cx'+Date.now() : null,
     nines: isComplex ? [document.getElementById('nine-a').value||'Front', document.getElementById('nine-b').value||'Back'] : ['Front','Back']
   };
+  window._apiCourseData = null;
   state.courses.push(course);
   state.activeCourseId = course.id;
   saveState();
@@ -2360,50 +2363,66 @@ function debounceCourseSearch(val) {
 
 
 async function selectApiCourse(id, name, location) {
-  // Hide results, fill name field
+  // Hide results, fill name/location fields
   document.getElementById('api-course-results').style.display = 'none';
   document.getElementById('api-course-search').value = name;
   document.getElementById('course-name').value = name;
   document.getElementById('course-location').value = location;
-  // Pre-switch to manual so user can see populated fields
+  // Switch to manual tab so user can see fields
   switchModalTab('manual');
 
-  // Fetch full course details for tees
-  const teeWrap = document.getElementById('tee-picker-wrap');
-  const teeSelect = document.getElementById('tee-picker-select');
-  teeWrap.style.display = 'block';
-  teeSelect.innerHTML = '<option value="">Loading tees…</option>';
+  // Show loading state in par/rating/slope fields
+  const ratingEl = document.getElementById('course-rating');
+  const slopeEl  = document.getElementById('course-slope');
+  const parEl    = document.getElementById('course-par');
+  if (ratingEl) ratingEl.placeholder = 'Loading…';
+  if (slopeEl)  slopeEl.placeholder  = 'Loading…';
+  if (parEl)    parEl.placeholder    = 'Loading…';
 
   try {
-    const res = await fetch(`${PROXY}?action=course&id=${id}`);
+    const res = await fetch(PROXY + '?action=course&id=' + id);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
 
     const course = data.course || data;
     const rawTees = course.tees || {};
-    // Flatten male/female tee arrays and tag with gender
-    const maleTees   = (rawTees.male   || []).map(t => ({...t, gender:'male'}));
-    const femaleTees = (rawTees.female || []).map(t => ({...t, gender:'female'}));
-    _apiTees = [...maleTees, ...femaleTees];
+    const maleTees   = (rawTees.male   || []).map(t => Object.assign({}, t, {gender:'male'}));
+    const femaleTees = (rawTees.female || []).map(t => Object.assign({}, t, {gender:'female'}));
+    _apiTees = maleTees.concat(femaleTees);
 
-    if (!_apiTees.length) {
-      teeSelect.innerHTML = '<option value="">No tee data — enter manually</option>';
-      return;
+    // Store full tee data on window for saveCourse to access
+    window._apiCourseData = { id, tees: rawTees };
+
+    // Auto-populate form with the first/middle male tee as default
+    // Use the middle tee (most common "white/regular" tee) as default
+    const defaultTee = maleTees[Math.floor(maleTees.length / 2)] || maleTees[0] || femaleTees[0];
+    if (defaultTee) {
+      _selectedTee = defaultTee;
+      if (ratingEl) ratingEl.value = defaultTee.course_rating || '';
+      if (slopeEl)  slopeEl.value  = defaultTee.slope_rating  || '';
+      if (parEl)    parEl.value    = defaultTee.par_total      || '';
+      // Set holes
+      const holesEl = document.getElementById('course-holes');
+      if (holesEl && defaultTee.par_total) {
+        holesEl.value = defaultTee.holes ? defaultTee.holes.length : 18;
+      }
+      // Show a note about which tee was used
+      const teeNote = document.getElementById('api-tee-note');
+      if (teeNote) {
+        teeNote.textContent = 'Auto-filled from ' + (defaultTee.tee_name || 'default') + ' tees. Adjust if needed.';
+        teeNote.style.display = '';
+      }
+    } else {
+      if (ratingEl) ratingEl.placeholder = 'Enter rating';
+      if (slopeEl)  slopeEl.placeholder  = 'Enter slope';
+      if (parEl)    parEl.placeholder    = 'Enter par';
     }
 
-    teeSelect.innerHTML = '<option value="">— Choose your tee —</option>' +
-      _apiTees.map((t, i) => {
-        const genderLabel = t.gender === 'female' ? '♀ ' : '♂ ';
-        const name = t.tee_name || 'Unknown';
-        const rating = t.course_rating || '?';
-        const slope  = t.slope_rating  || '?';
-        const par    = t.par_total     || '?';
-        return `<option value="${i}">${genderLabel}${name} — Par ${par} · Rating ${rating} · Slope ${slope}</option>`;
-      }).join('');
-
   } catch(e) {
-    teeSelect.innerHTML = '<option value="">Could not load tees — enter manually</option>';
-    console.error('Tee fetch error:', e);
+    if (ratingEl) ratingEl.placeholder = 'Enter rating';
+    if (slopeEl)  slopeEl.placeholder  = 'Enter slope';
+    if (parEl)    parEl.placeholder    = 'Enter par';
+    console.error('Course fetch error:', e);
   }
 }
 
@@ -3381,8 +3400,13 @@ async function _ghinAuthenticate(ghinNum, password) {
     body: JSON.stringify({ ghin_number: ghinNum, password }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'GHIN login failed');
-  return data; // { token, handicap_index, low_hi, first_name, club_name, rev_date }
+  if (!res.ok) {
+    // Log debug info to console so we can see the response shape
+    if (data.debug_keys) console.log('GHIN response keys:', data.debug_keys);
+    if (data.debug_sample) console.log('GHIN response sample:', data.debug_sample);
+    throw new Error(data.error || 'GHIN login failed');
+  }
+  return data;
 }
 
 async function _ghinRefreshIndex(token, ghinNum) {

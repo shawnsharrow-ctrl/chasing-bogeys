@@ -57,6 +57,15 @@ exports.handler = async (event) => {
           || (loginData.errors ? JSON.stringify(loginData.errors) : null)
           || ('GHIN status ' + loginRes.status);
         console.log('GHIN login failed:', msg, JSON.stringify(loginData).slice(0, 500));
+        // DEBUG MODE — when status is 200 but no token found, return the full response shape
+        // so we can identify the correct token field name
+        if (loginRes.ok && !token) {
+          return { statusCode: 401, headers, body: JSON.stringify({
+            error: 'Token field not found in GHIN response',
+            debug_keys: Object.keys(loginData),
+            debug_sample: JSON.stringify(loginData).slice(0, 1500)
+          }) };
+        }
         return { statusCode: 401, headers, body: JSON.stringify({ error: msg }) };
       }
 

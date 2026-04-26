@@ -1262,6 +1262,23 @@ function renderSummaryCards(courseOrId) {
         <div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">Trend</div><div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">${last5avg.toFixed(1)}</div></div>
         <div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">High</div><div style="font-size:1.3rem;font-weight:600;color:var(--text-dark);">${high}</div></div>
       </div>
+      <div style="border-top:1px solid var(--cream-dark);margin:.4rem 0 .3rem;padding-top:.4rem;display:grid;grid-template-columns:1fr 1fr;gap:.25rem .75rem;">
+        ${(function(){
+          const statsRnds = rounds.filter(function(r){return !r.scoreOnly && r.girs;});
+          const totalHoles = statsRnds.reduce(function(s,r){return s+(r.girs||[]).length;},0);
+          const girCount = statsRnds.reduce(function(s,r){return s+(r.girs||[]).filter(Boolean).length;},0);
+          const girPct = totalHoles ? Math.round(girCount/totalHoles*100) : null;
+          const chipUD = calcUpDown(statsRnds,'chip');
+          const pitchUD = calcUpDown(statsRnds,'pitch');
+          const udAttempts = chipUD.attempts + pitchUD.attempts;
+          const udSuccess  = chipUD.successes + pitchUD.successes;
+          const udPct = udAttempts ? Math.round(udSuccess/udAttempts*100) : null;
+          return '<div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">GIR %</div>'
+            + '<div style="font-size:1.1rem;font-weight:600;color:var(--text-dark);">'+(girPct!==null?girPct+'%':'—')+'</div></div>'
+            + '<div><div style="font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">Up & Down %</div>'
+            + '<div style="font-size:1.1rem;font-weight:600;color:var(--text-dark);">'+(udPct!==null?udPct+'%':'—')+'</div></div>';
+        })()}
+      </div>
       <div class="summary-sub">par ${course.par}</div>
     </div>
     <div class="summary-card">
@@ -1642,8 +1659,8 @@ function calcUpDown(rounds, shotType) {
       const pitchCount = pitches[i] || 0;
       const puttCount  = putts[i]   || 0;
       if (shotType === 'chip') {
-        // Must have exactly 1 chip, 0 pitches, 1 putt
-        if (chipCount === 1 && pitchCount === 0) {
+        const girHit = r.girs && r.girs[i];
+        if (chipCount === 1 && pitchCount === 0 && !girHit) {
           attempts++;
           if (puttCount === 1) successes++;
         }
@@ -1653,8 +1670,8 @@ function calcUpDown(rounds, shotType) {
       const chipCount = chips[i] || 0;
       const puttCount = putts[i] || 0;
       if (shotType === 'pitch') {
-        // Must have exactly 1 pitch, 0 chips, 1 putt
-        if (pitchCount === 1 && chipCount === 0) {
+        const girHit = r.girs && r.girs[i];
+        if (pitchCount === 1 && chipCount === 0 && !girHit) {
           attempts++;
           if (puttCount === 1) successes++;
         }

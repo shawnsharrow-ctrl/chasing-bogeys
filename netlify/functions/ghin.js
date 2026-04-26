@@ -83,33 +83,32 @@ exports.handler = async (event) => {
 
       console.log('Token found successfully');
 
-      // Extract golfer info — search the response for known fields
-      const golfers = loginData.golfers || loginData.Golfers || [];
-      const golfer = golfers[0] || loginData.golfer || loginData.golfer_user || {};
-      const ghinNum = golfer.ghin_number || golfer.ghin || golfer.GHINNumber || ghin_number;
-      let handicapIndex = golfer.handicap_index || golfer.HandicapIndex || null;
-      let lowHi = golfer.low_hi || golfer.LowHI || null;
-      let revDate = golfer.rev_date || golfer.RevDate || null;
-      let clubName = golfer.club_name || golfer.ClubName || '';
-      let firstName = golfer.first_name || golfer.FirstName || '';
+      // Always search by email to get GHIN number + handicap index
+      // This is the most reliable approach since login may not return golfer data
+      let ghinNum = ghin_number; // fallback to whatever was entered
+      let handicapIndex = null, lowHi = null, revDate = null, clubName = '', firstName = '';
 
-      // If no handicap in login response, fetch separately
-      if (!handicapIndex && ghinNum) {
-        try {
-          const hRes = await fetch(
-            `https://api2.ghin.com/api/v1/golfers/search.json?golfer_id=${ghinNum}&per_page=1&page=1&source=GHINcom`,
-            { headers: { 'Authorization': 'Bearer ' + token } }
-          );
-          const hData = await hRes.json();
-          const g = (hData.golfers || [])[0] || {};
-          handicapIndex = g.handicap_index || null;
-          lowHi = g.low_hi || null;
-          revDate = g.rev_date || null;
-          clubName = clubName || g.club_name || '';
-          firstName = firstName || g.first_name || '';
-        } catch (hErr) {
-          console.warn('Handicap fetch failed (non-fatal):', hErr.message);
-        }
+      try {
+        const hRes = await fetch(
+          'https://api2.ghin.com/api/v1/golfers/search.json?golfer_id=' + encodeURIComponent(ghin_number) + '&per_page=1&page=1&source=GHINcom',
+          { headers: { 'Authorization': 'Bearer ' + token } }
+        );
+        const hData = await hRes.json();
+        const g = (hData.golfers || [])[0] || {};
+        ghinNum = g.ghin_number || g.ghin || ghin_number;
+        handicapIndex = g.handicap_index || null;
+        lowHi = g.low_hi || null;
+        revDate = g.rev_date || null;
+        clubName = g.club_name || '';
+        firstName = g.first_name || '';
+        console.log('Golfer found:', ghinNum, 'HI:', handicapIndex);
+      } catch (hErr) {
+        console.warn('Golfer search failed:', hErr.message);
+        // Try to extract from login response as fallback
+        const golfers = loginData.golfers || loginData.Golfers || [];
+        const g = golfers[0] || loginData.golfer || loginData.golfer_user || {};
+        ghinNum = g.ghin_number || g.ghin || ghin_number;
+        firstName = g.first_name || g.FirstName || '';
       }
 
       return {

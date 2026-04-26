@@ -2354,32 +2354,13 @@ async function saveRoundToSupabase(round) {
 async function saveCourseToSupabase(course) {
   const { data: { session } } = await _supabase.auth.getSession();
   if (!session) return;
-  // Try v2 schema first (jsonb), fall back to v1 if not yet migrated
-  let result = await _supabase.from('courses').upsert({
+  const { error } = await _supabase.from('courses').upsert({
     local_id: course.id,
     user_id: session.user.id,
     data: course,
     updated_at: new Date().toISOString()
   }, { onConflict: 'local_id,user_id' });
-  if (result.error && result.error.code === 'PGRST204') {
-    // v2 schema not yet deployed — try v1 schema columns
-    result = await _supabase.from('courses').upsert({
-      id: course.id,
-      user_id: session.user.id,
-      name: course.name,
-      location: course.location || '',
-      rating: course.rating || 72,
-      slope: course.slope || 113,
-      par: course.par || 72,
-      holes: course.holes || 18,
-      hole_pars: course.holePars || [],
-      is_complex: course.isComplex || false,
-      complex_name: course.complexName || null,
-      complex_id: course.complexId || null,
-      nine_labels: course.nines || []
-    });
-  }
-  if (result.error) console.warn('saveCourseToSupabase error:', result.error.message);
+  if (error) console.warn('saveCourseToSupabase error:', error.message);
 }
 
 async function saveSettingsToSupabase(settings) {

@@ -741,18 +741,18 @@ const _supabase = supabase.createClient('https://ltswwjjxcoqaokgxiszb.supabase.c
      MODAL: ADD COURSE
 ══════════════════════════════════════════ -->
 <div class="modal-overlay" id="add-course-modal">
-  <div class="modal">
+  <div class="modal" style="max-height:92vh;display:flex;flex-direction:column;width:min(780px,96vw);">
     <div class="modal-header">
       <h3 class="modal-title">Add a Course</h3>
       <button class="modal-close" onclick="closeModal('add-course-modal')">✕</button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" style="overflow-y:auto;flex:1;min-height:0;">
       <div class="modal-tab-row">
         <button class="modal-tab active" onclick="switchModalTab('search')">Search Courses</button>
         <button class="modal-tab" onclick="switchModalTab('manual')">Enter Manually</button>
       </div>
 
-      <div id="modal-tab-search">
+      <div id="modal-tab-search" style="position:relative;">
         <div class="form-group">
           <label class="form-label">Search for your course</label>
           <div class="course-search-wrap">
